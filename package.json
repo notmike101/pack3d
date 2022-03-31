@@ -1,0 +1,33 @@
+{
+  "name": "immtech-pack3d",
+  "version": "1.0.0",
+  "main": "dist/main/index.cjs",
+  "author": "Mike Orozco <mike.orozco@thermofisher.com>",
+  "scripts": {
+    "dev": "node scripts/watch.mjs",
+    "prebuild": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
+    "build": "electron-builder"
+  },
+  "engines": {
+    "node": ">=14.17.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.1.0",
+    "electron": "17.2.0",
+    "electron-builder": "^22.14.5",
+    "sass": "^1.49.10",
+    "typescript": "^4.6.3",
+    "vite": "^2.8.6",
+    "vite-plugin-electron-renderer": "^0.3.2",
+    "vite-plugin-resolve": "^2.0.1",
+    "vue": "^3.2.31",
+    "vue-tsc": "^0.31.1"
+  },
+  "env": {
+    "VITE_DEV_SERVER_HOST": "127.0.0.1",
+    "VITE_DEV_SERVER_PORT": 3344
+  },
+  "dependencies": {
+    "@babylonjs/core": "^4.2.2"
+  }
+}
