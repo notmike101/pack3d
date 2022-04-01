@@ -1,78 +1,100 @@
-import { app, BrowserWindow, shell } from 'electron'
-import { release } from 'os'
-import { join } from 'path'
+import { app, BrowserWindow, shell, ipcMain, ipcRenderer } from 'electron';
+import { release } from 'os';
+import { join as pathJoin } from 'path';
+import { Worker } from 'worker_threads';
+import packWorker from './worker.js?raw';
 
-// Disable GPU Acceleration for Windows 7
-if (release().startsWith('6.1')) app.disableHardwareAcceleration()
+if (release().startsWith('6.1')) app.disableHardwareAcceleration();
 
-// Set application name for Windows 10+ notifications
-if (process.platform === 'win32') app.setAppUserModelId(app.getName())
+if (process.platform === 'win32') app.setAppUserModelId(app.getName());
 
 if (!app.requestSingleInstanceLock()) {
-  app.quit()
-  process.exit(0)
+  app.quit();
+  process.exit(0);
 }
-process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
-let win: BrowserWindow | null = null
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
+let mainWin: BrowserWindow | null = null;
+
 
 async function createWindow() {
-  win = new BrowserWindow({
+  mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.cjs'),
+      preload: pathJoin(__dirname, '../preload/index.cjs'),
       nodeIntegration: true,
       contextIsolation: false,
+      allowRunningInsecureContent: true,
+      webSecurity: false,
     },
     resizable: false,
-    width: 1000,
-    height: 700,
-  })
+    width: 1500,
+    height: 1000,
+  });
 
-  win.setMenu(null);
+  mainWin.setMenu(null);
 
   if (app.isPackaged) {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWin.loadFile(pathJoin(__dirname, '../renderer/index.html'));
   } else {
-    // 🚧 Use ['ENV_NAME'] avoid vite:define plugin
-    const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`
+    const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
 
-    win.loadURL(url)
-    win.webContents.openDevTools()
+    mainWin.loadURL(url);
+    mainWin.webContents.openDevTools();
   }
 
-  // Test active push message to Renderer-process
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', new Date().toLocaleString())
-  })
+  mainWin.webContents.on('did-finish-load', () => {
+    mainWin?.webContents.send('main-process-message', new Date().toLocaleString());
+  });
 
-  // Make all links open with the browser, not with the application
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:')) shell.openExternal(url)
-    return { action: 'deny' }
+  mainWin.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:')) shell.openExternal(url);
+
+    return { action: 'deny' };
   })
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  win = null
-  if (process.platform !== 'darwin') app.quit()
+  mainWin = null;
+
+  if (process.platform !== 'darwin') app.quit();
 })
 
 app.on('second-instance', () => {
-  if (win) {
-    // Focus on the main window if the user tried to open another
-    if (win.isMinimized()) win.restore()
-    win.focus()
+  if (mainWin) {
+    if (mainWin.isMinimized()) mainWin.restore();
+
+    mainWin.focus();
   }
-})
+});
 
 app.on('activate', () => {
-  const allWindows = BrowserWindow.getAllWindows()
+  const allWindows = BrowserWindow.getAllWindows();
+
   if (allWindows.length) {
-    allWindows[0].focus()
+    allWindows[0].focus();
   } else {
-    createWindow()
+    createWindow();
   }
-})
+});
+
+ipcMain.on('request-pack', async (event, data) => {
+  const worker = new Worker(packWorker, { eval: true });
+  const { sender } = event;
+
+  worker.on('message', (result) => {
+    if (result.type === 'errorreport') {
+      sender.send('pack-error', result);
+    } else if (result.type === 'sizereport') {
+      sender.send('pack-sizereport', result);
+    } else if (result.type === 'packreport') {
+      sender.send('pack-success', result);
+    }
+  });
+
+  worker.postMessage(data);
+});
+

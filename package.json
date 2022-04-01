@@ -25,9 +25,19 @@
   },
   "env": {
     "VITE_DEV_SERVER_HOST": "127.0.0.1",
-    "VITE_DEV_SERVER_PORT": 3344
+    "VITE_DEV_SERVER_PORT": 3344,
+    "VITE_WORKER_SERVER_HOST": "127.0.0.1",
+    "VITE_WORKER_SERVER_PORT": 3345
   },
   "dependencies": {
-    "@babylonjs/core": "^4.2.2"
+    "@babylonjs/core": "^5.0.0",
+    "@babylonjs/loaders": "^5.0.0",
+    "@gltf-transform/core": "^2.0.5",
+    "@gltf-transform/extensions": "^2.0.5",
+    "@gltf-transform/functions": "^2.0.5",
+    "@lottiefiles/vue-lottie-player": "^1.0.5",
+    "@types/draco3dgltf": "^1.4.0",
+    "draco3dgltf": "^1.5.2",
+    "meshoptimizer": "^0.17.0"
   }
 }
