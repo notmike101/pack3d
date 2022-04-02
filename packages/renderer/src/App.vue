@@ -71,6 +71,8 @@ function doPack() {
 
   outputFileSize.value = 0;
   isProcessing.value = true;
+  
+  addLog('Requesting pack for ' + inputFile.value?.path);
 }
 
 watch(errorMessage, () => {
@@ -96,6 +98,7 @@ ipcRenderer.on('pack-success', (event: Event, data: any): void => {
 ipcRenderer.on('pack-error', (event: Event, data: any): void => {
   errorMessage.value = data.error.message;
   isProcessing.value = false;
+
   addLog('Error: ' + data.error.message);
 });
 
