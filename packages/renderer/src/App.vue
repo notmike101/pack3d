@@ -4,6 +4,19 @@ import path from 'path';
 import BabylonScene from './components/BabylonScene.vue';
 import { ipcRenderer } from 'electron';
 
+interface CameraPosition {
+  target: {
+    x: number;
+    y: number;
+    z: number;
+  }
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  }
+}
+
 const inputFile = ref<File | null>(null);
 const outputFile = ref<File | null>(null);
 const doDedupe = ref<boolean>(false);
@@ -17,6 +30,7 @@ const errorMessage = ref<string>('');
 const isProcessing = ref<boolean>(false);
 const inputFileSize = ref<number>(0);
 const outputFileSize = ref<number>(0);
+const cameraPosition = ref<CameraPosition | null>(null);
 const logs = ref([] as string[]);
 let errorMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,6 +87,10 @@ function doPack() {
   isProcessing.value = true;
   
   addLog('Requesting pack for ' + inputFile.value?.path);
+}
+
+function updateCameraPosition(event: { position: { x: number, y: number, z: number }, target: { x: number, y: number, z: number }}) {
+  cameraPosition.value = event;
 }
 
 watch(errorMessage, () => {
@@ -153,7 +171,7 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
       <main v-if="inputFile">
         <div class="canvas-container">
           <p class="canvas-container-header">Input File</p>
-          <BabylonScene :model="inputFile" />
+          <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
           <div class="file-info">
             <p>File Size: {{ formatBytes(inputFileSize) }}</p>
           </div>
@@ -161,7 +179,7 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
         <div class="canvas-container">
           <p class="canvas-container-header">Output File</p>
           <template v-if="outputFile">
-            <BabylonScene :model="outputFile" v-if="outputFile" />
+            <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
             <div class="file-info">
               <p>File Size: {{ formatBytes(outputFileSize) }}</p>
             </div>
