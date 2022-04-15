@@ -1,11 +1,67 @@
 const { parentPort } = require('worker_threads');
 const { NodeIO } = require('@gltf-transform/core');
-const { dedup, weld, reorder, textureResize } = require('@gltf-transform/functions');
+const { dedup, weld, reorder, textureResize, instance } = require('@gltf-transform/functions');
 const { DracoMeshCompression, TextureTransform, TextureBasisu } = require('@gltf-transform/extensions');
 const { MeshoptEncoder } = require('meshoptimizer');
 const draco3d = require('draco3dgltf');
 const path = require('path');
 const { Blob } = require('buffer');
+
+class Logger {
+  static Verbosity = {
+    SILENT: 4,
+    ERROR: 3,
+    WARN: 2,
+    INFO: 1,
+    DEBUG: 0,
+  };
+
+  static DEFAULT_INSTANCE = new Logger(Logger.Verbosity.INFO);
+
+  constructor(verbosity) {
+    this.verbosity = verbosity;
+  }
+
+  debug(text) {
+    if (this.verbosity <= Logger.Verbosity.DEBUG) {
+      parentPort.postMessage({
+        type: 'logging',
+        verbosity: this.verbosity,
+        text,
+      });
+    }
+  }
+
+  info(text) {
+    if (this.verbosity <= Logger.Verbosity.INFO) {
+      parentPort.postMessage({
+        type: 'logging',
+        verbosity: this.verbosity,
+        text,
+      });
+    }
+  }
+
+  warn(text) {
+    if (this.verbosity <= Logger.Verbosity.WARN) {
+      parentPort.postMessage({
+        type: 'logging',
+        verbosity: this.verbosity,
+        text,
+      });
+    }
+  }
+
+  error(text) {
+    if (this.verbosity <= Logger.Verbosity.ERROR) {
+      parentPort.postMessage({
+        type: 'logging',
+        verbosity: this.verbosity,
+        text,
+      });
+    }
+  }
+}
 
 async function doPack(filePath, outputPath, options = {}) {  
   try {
@@ -28,8 +84,101 @@ async function doPack(filePath, outputPath, options = {}) {
     const extension = filePathInfo.ext;
     let outFileName = filePathInfo.name;
 
+    document.setLogger(new Logger(Logger.Verbosity.DEBUG));
+
+    if (options.doDedupe === true) {
+      const startSize = documentBinary.byteLength;
+
+      await document.transform(dedup());
+      documentBinary = await io.writeBinary(document);
+
+      const endSize = documentBinary.byteLength;
+
+      parentPort.postMessage({
+        type: 'sizereport',
+        action: 'dedupe',
+        startSize,
+        endSize,
+      });
+    }
+
+    if (options.doInstancing === true) {
+      const startSize = documentBinary.byteLength;
+      
+      await document.transform(instance());
+      documentBinary = await io.writeBinary(document);
+
+      const endSize = doumentBinary.byteLength;
+
+      parentPort.postMessage({
+        type: 'sizereport',
+        action: 'instance',
+        startSize,
+        endSize,
+      });
+
+      outFileName += '_instance';
+    }
+
+    if (options.doReorder === true) {
+      const startSize = documentBinary.byteLength;
+
+      await document.transform(reorder({
+        encoder: MeshoptEncoder,
+      }));
+      documentBinary = await io.writeBinary(document);
+      
+      const endSize = documentBinary.byteLength;
+
+      parentPort.postMessage({
+        type: 'sizereport',
+        action: 'reorder',
+        startSize,
+        endSize,
+      });
+    }
+
+    if (options.doWeld === true) {
+      const startSize = documentBinary.byteLength;
+
+      await document.transform(weld());
+      documentBinary = await io.writeBinary(document);
+      
+      const endSize = documentBinary.byteLength;
+
+      parentPort.postMessage({
+        type: 'sizereport',
+        action: 'weld',
+        startSize,
+        endSize,
+      });
+    }
+
+    if (options.doResize === true) {
+      const startSize = documentBinary.byteLength;
+
+      await document.transform(textureResize({
+        size: [options.textureResolutionWidth, options.textureResolutionHeight],
+        filter: options.resamplingFilter,
+      }));
+      documentBinary = await io.writeBinary(document);
+      
+      const endSize = documentBinary.byteLength;
+
+      parentPort.postMessage({
+        type: 'sizereport',
+        action: 'resize',
+        startSize,
+        endSize,
+      });
+
+      outFileName += '_resize';
+    }
+
     if (options.doBasis === true) {
       const startSize = documentBinary.byteLength;
+
+      document.createTexture('')
 
       documentBinary = await io.writeBinary(document);
       
@@ -51,8 +200,17 @@ async function doPack(filePath, outputPath, options = {}) {
       document.createExtension(DracoMeshCompression)
         .setRequired(true)
         .setEncoderOptions({
-          decodeSpeed: 1,
-          encodeSpeed: 1,
+          decodeSpeed: options.decodeSpeed,
+          encodeSpeed: options.encodeSpeed,
+          method: options.vertexCompressionMethod,
+          quantizationVolume: options.quantizationVolume,
+          quantizationBits: {
+            POSITION: options.quantizationPosition,
+            NORMAL: options.quantizationNormal,
+            COLOR: options.quantizationColor,
+            TEX_COORD: options.quantizationTexCoord,
+            GENERIC: options.quantizationGeneric,
+          }
         });
 
       documentBinary = await io.writeBinary(document);
@@ -69,81 +227,7 @@ async function doPack(filePath, outputPath, options = {}) {
       outFileName += '_draco';
     }
 
-    if (options.doDedupe === true) {
-      const startSize = documentBinary.byteLength;
-
-      await document.transform(dedup());
-      documentBinary = await io.writeBinary(document);
-
-      const endSize = documentBinary.byteLength;
-
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'dedupe',
-        startSize,
-        endSize,
-      });
-
-      outFileName += '_dedup';
-    }
-
-    if (options.doReorder === true) {
-      const startSize = documentBinary.byteLength;
-
-      await document.transform(reorder({
-        encoder: MeshoptEncoder,
-      }));
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
-
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'reorder',
-        startSize,
-        endSize,
-      });
-
-      outFileName += '_reorder';
-    }
-
-    if (options.doWeld === true) {
-      const startSize = documentBinary.byteLength;
-
-      await document.transform(weld());
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
-
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'weld',
-        startSize,
-        endSize,
-      });
-
-      outFileName += '_weld';
-    }
-
-    if (options.doResize === true) {
-      const startSize = documentBinary.byteLength;
-
-      await document.transform(textureResize());
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
-
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'resize',
-        startSize,
-        endSize,
-      });
-
-      outFileName += '_resize';
-    }
-
-    outFileName += extension;
+    outFileName += '_packed' + extension;
 
     const outFile = path.resolve(outputPath + '/' + outFileName);
 
@@ -171,9 +255,20 @@ parentPort.on('message', async (data) => {
     doDedupe: data.doDedupe,
     doReorder: data.doReorder,
     doWeld: data.doWeld,
+    doInstancing: data.doInstancing,
     doResize: data.doResize,
     doBasis: data.doBasis,
     doDraco: data.doDraco,
+    resamplingFilter: data.resamplingFilter,
+    textureResolutionWidth: data.textureResolutionWidth,
+    textureResolutionHeight: data.textureResolutionHeight,
+    vertexCompressionMethod: data.vertexCompressionMethod,
+    quantizationVolume: data.quantizationVolume,
+    quantizationColor: data.quantizationColor,
+    quantizationGeneric: data.quantizationGeneric,
+    quantizationNormal: data.quantizationNormal,
+    quantizationPosition: data.quantizationPosition,
+    quantizationTexcoord: data.quantizationTexcoord,
   });
 
   if (output instanceof Error) {

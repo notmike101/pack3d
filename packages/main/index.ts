@@ -28,7 +28,7 @@ async function createWindow() {
       allowRunningInsecureContent: true,
       webSecurity: false,
     },
-    resizable: false,
+    resizable: true,
     width: 1500,
     height: 1000,
   });
@@ -86,7 +86,9 @@ ipcMain.on('request-pack', async (event, data) => {
   const { sender } = event;
 
   worker.on('message', (result) => {
-    if (result.type === 'errorreport') {
+    if (result.type === 'logging') {
+      sender.send('logging', result);
+    } else if (result.type === 'errorreport') {
       sender.send('pack-error', result);
     } else if (result.type === 'sizereport') {
       sender.send('pack-sizereport', result);
