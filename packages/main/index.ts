@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, ipcRenderer } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { release } from 'os';
 import { join as pathJoin } from 'path';
 import { Worker } from 'worker_threads';
@@ -59,6 +59,8 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', (): void => {
   mainWin = null;
 
+  console.log('window-all-closed');
+
   if (process.platform !== 'darwin') app.quit();
 })
 
@@ -99,3 +101,18 @@ ipcMain.on('request-pack', async (event, data): Promise<void> => {
   worker.postMessage(data);
 });
 
+ipcMain.handle('dialog:openDirectory', async (): Promise<string> => {
+  let filePath = '';
+
+  if (mainWin) {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWin, {
+      properties: ['openDirectory', 'dontAddToRecent'],
+    });
+
+    if (!canceled) {
+      filePath = filePaths[0] ?? '';
+    }
+  }
+
+  return filePath;
+});

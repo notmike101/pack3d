@@ -122,15 +122,13 @@ function resize(): void {
   if (engine && canvas.value) {
     const { parentElement } = canvas.value;
 
-    canvas.value.remove();
+    if (parentElement) {
+      const { width, height } = parentElement.getBoundingClientRect();
 
-    // const { width, height } = parentElement.getBoundingClientRect();
+      engine.setSize(width | 0, height | 0, true);
 
-    // engine.setSize(width | 0, height | 0, false);
-
-    parentElement?.firstElementChild?.insertAdjacentElement('afterend', canvas.value)
-
-    renderNextFrame = true;
+      renderNextFrame = true;
+    }
   }
 }
 
@@ -140,9 +138,9 @@ onUpdated((): void => {
   }
 
   if (props.model?.path !== loadedModel) {
-      const meshes: SmartArray<AbstractMesh> | undefined = scene?.getActiveMeshes();
+      const meshes: SmartArray<AbstractMesh> | [] = scene?.getActiveMeshes() ?? [];
       
-      meshes?.forEach((mesh: AbstractMesh) => {
+      meshes.forEach((mesh: AbstractMesh) => {
         mesh.dispose();
       });
 
@@ -156,7 +154,10 @@ onMounted((): void => {
     canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
     canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
     canvas.value.addEventListener('wheel', wheelEventHandler);
-    resizeObserver.observe(canvas.value.parentElement);
+
+    if (canvas.value.parentElement) {
+      resizeObserver.observe(canvas.value.parentElement);
+    }
 
     engine = new Engine(canvas.value);
     scene = new Scene(engine);
@@ -207,6 +208,5 @@ canvas {
   height: 100%;
   width: 100%;
   aspect-ratio: unset;
-  // flex: 1;
 }
 </style>

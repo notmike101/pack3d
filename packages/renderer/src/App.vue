@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import path from 'path';
 import BabylonScene from './components/BabylonScene.vue';
 import { ipcRenderer } from 'electron';
+import path from 'path';
 
 interface CameraPosition {
   target: {
@@ -47,7 +47,7 @@ const cameraPosition = ref<CameraPosition | null>(null);
 const logs = ref([] as string[]);
 let errorMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
-function formatBytes(bytes: number) {
+function formatBytes(bytes: number): string {
   if (bytes < 1024) return bytes + ' Bytes';
   if (bytes < 1048576) return (bytes / 1024).toFixed(3) + ' KB';
   if (bytes < 1073741824) return (bytes / 1048576).toFixed(3) + ' MB';
@@ -55,7 +55,7 @@ function formatBytes(bytes: number) {
   return (bytes / 1073741824).toFixed(3) + ' GB';
 }
 
-function addLog(data: any) {
+function addLog(data: any): void {
   logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
 }
 
@@ -115,7 +115,7 @@ function doPack() {
   addLog('Requesting pack for ' + inputFile.value?.path);
 }
 
-function updateCameraPosition(event: { position: { x: number, y: number, z: number }, target: { x: number, y: number, z: number }}) {
+function updateCameraPosition(event: CameraPosition) {
   cameraPosition.value = event;
 }
 
@@ -280,10 +280,6 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
         </div>
       </div>
       <div class="bottom-options">
-        <div class="input-group col" style="margin-top: auto;">
-          <label for="outputPath">Output Path</label>
-          <input type="text" id="outputPath" v-model="outputPath" />
-        </div>
         <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
           <span v-if="isProcessing === false">Pack</span>
           <span v-if="isProcessing === true">Processing...</span>
@@ -292,22 +288,20 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
     </aside>
     <main v-if="inputFile">
       <div style="display: flex; flex-direction: column;flex: 1;">
-        <div style="display: flex; flex-direction: row;flex: 1;">
+        <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
           <div class="canvas-container">
-            <p class="canvas-container-header">Input File</p>
             <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
-            <div class="file-info">
+            <div class="canvas-container-info">
+              <p>File Name: {{ inputFile.name }}</p>
               <p>File Size: {{ formatBytes(inputFileSize) }}</p>
             </div>
           </div>
           <div v-if="outputFile" class="canvas-container">
-            <p class="canvas-container-header">Output File</p>
             <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
-            <div class="file-info">
+            <div class="canvas-container-info">
+              <p>File Name: {{ outputFile.name }}</p>
               <p>File Size: {{ formatBytes(outputFileSize) }}</p>
             </div>
-            <p v-if="!outputFile && isProcessing === false" class="action-needed-notice">Click "Pack" to display the output preview</p>
-            <div v-if="!outputFile && isProcessing === true" class="spinner"></div>
           </div>
         </div>
         <div class="log">
@@ -544,6 +538,23 @@ $font-size: 12px;
       display: flex;
       flex-direction: column;
       position: relative;
+      overflow: hidden;
+      max-width: 100%;
+      max-height: 100%;
+
+      .canvas-container-info {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.7);
+        font-size: $font-size;
+        text-align: left;
+        padding: 5px;
+        color: white;
+
+        p {
+          margin: 0;
+          padding: 0;
+        }
+      }
 
       .canvas-container-header {
         border-bottom: 1px solid black;

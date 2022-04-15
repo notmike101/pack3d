@@ -1,11 +1,10 @@
-const { parentPort } = require('worker_threads');
-const { NodeIO } = require('@gltf-transform/core');
-const { dedup, weld, reorder, textureResize, instance } = require('@gltf-transform/functions');
-const { DracoMeshCompression, TextureTransform, TextureBasisu } = require('@gltf-transform/extensions');
-const { MeshoptEncoder } = require('meshoptimizer');
-const draco3d = require('draco3dgltf');
-const path = require('path');
-const { Blob } = require('buffer');
+import { parentPort } from 'worker_threads';
+import { NodeIO } from '@gltf-transform/core';
+import { dedup, weld, reorder, textureResize, instance } from '@gltf-transform/functions';
+import { DracoMeshCompression, TextureTransform, TextureBasisu } from '@gltf-transform/extensions';
+import { MeshoptEncoder } from 'meshoptimizer';
+import draco3d from 'draco3dgltf';
+import path from 'path';
 
 class Logger {
   static Verbosity = {
@@ -236,6 +235,7 @@ async function doPack(filePath, outputPath, options = {}) {
     await io.write(outFile, document);
 
     return {
+      name: outFileName,
       path: outFile,
       binary: documentBinary,
     };
