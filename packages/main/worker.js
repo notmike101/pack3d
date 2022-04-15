@@ -1,10 +1,10 @@
-import { parentPort } from 'worker_threads';
-import { NodeIO } from '@gltf-transform/core';
-import { dedup, weld, reorder, textureResize, instance } from '@gltf-transform/functions';
-import { DracoMeshCompression, TextureTransform, TextureBasisu } from '@gltf-transform/extensions';
-import { MeshoptEncoder } from 'meshoptimizer';
-import draco3d from 'draco3dgltf';
-import path from 'path';
+const { parentPort } = require('worker_threads');
+const { NodeIO } = require('@gltf-transform/core');
+const { dedup, weld, reorder, textureResize, instance } = require('@gltf-transform/functions');
+const { DracoMeshCompression, TextureTransform, TextureBasisu } = require('@gltf-transform/extensions');
+const { MeshoptEncoder } = require('meshoptimizer');
+const draco3d = require('draco3dgltf');
+const path = require('path');
 
 class Logger {
   static Verbosity = {
@@ -62,141 +62,133 @@ class Logger {
   }
 }
 
-async function doPack(filePath, outputPath, options = {}) {  
-  try {
-    if (!filePath) throw new Error('No file path specified');
-    if (!outputPath) throw new Error('No output path specified');
+const io = new NodeIO()
+  .registerExtensions([
+    DracoMeshCompression,
+    TextureTransform,
+  ]);
 
-    const io = new NodeIO()
-      .registerExtensions([
-        DracoMeshCompression,
-        TextureTransform,
-      ])
-      .registerDependencies({
-        'draco3d.decoder': await draco3d.createDecoderModule(),
-        'draco3d.encoder': await draco3d.createEncoderModule(),
-      });
+async function doDedupe(document, documentBinary, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
 
-    const filePathInfo = path.parse(filePath);
-    const document = await io.read(filePath);
-    let documentBinary = await io.writeBinary(document);
-    const extension = filePathInfo.ext;
-    let outFileName = filePathInfo.name;
+  await document.transform(dedup());
+  documentBinary = await io.writeBinary(document);
 
-    document.setLogger(new Logger(Logger.Verbosity.DEBUG));
+  const endSize = documentBinary.byteLength;
 
-    if (options.doDedupe === true) {
-      const startSize = documentBinary.byteLength;
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'dedupe',
+    startSize,
+    endSize,
+  });
 
-      await document.transform(dedup());
-      documentBinary = await io.writeBinary(document);
+  return fileName + appendString;
+}
 
-      const endSize = documentBinary.byteLength;
-
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'dedupe',
-        startSize,
-        endSize,
-      });
-    }
-
-    if (options.doInstancing === true) {
-      const startSize = documentBinary.byteLength;
+async function doInstancing(document, documentBinary, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
       
-      await document.transform(instance());
-      documentBinary = await io.writeBinary(document);
+  await document.transform(instance());
+  documentBinary = await io.writeBinary(document);
 
-      const endSize = doumentBinary.byteLength;
+  const endSize = doumentBinary.byteLength;
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'instance',
-        startSize,
-        endSize,
-      });
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'instance',
+    startSize,
+    endSize,
+  });
 
-      outFileName += '_instance';
-    }
+  return fileName + appendString;
+}
 
-    if (options.doReorder === true) {
-      const startSize = documentBinary.byteLength;
+async function doReorder(document, documentBinary, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
 
-      await document.transform(reorder({
-        encoder: MeshoptEncoder,
-      }));
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
+  await document.transform(reorder({
+    encoder: MeshoptEncoder,
+  }));
+  documentBinary = await io.writeBinary(document);
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'reorder',
-        startSize,
-        endSize,
-      });
-    }
+  const endSize = documentBinary.byteLength;
 
-    if (options.doWeld === true) {
-      const startSize = documentBinary.byteLength;
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'reorder',
+    startSize,
+    endSize,
+  });
 
-      await document.transform(weld());
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
+  return fileName + appendString;
+}
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'weld',
-        startSize,
-        endSize,
-      });
-    }
+async function doWeld(document, documentBinary, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
 
-    if (options.doResize === true) {
-      const startSize = documentBinary.byteLength;
+  await document.transform(weld());
+  documentBinary = await io.writeBinary(document);
 
-      await document.transform(textureResize({
-        size: [options.textureResolutionWidth, options.textureResolutionHeight],
-        filter: options.resamplingFilter,
-      }));
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
+  const endSize = documentBinary.byteLength;
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'resize',
-        startSize,
-        endSize,
-      });
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'weld',
+    startSize,
+    endSize,
+  });
 
-      outFileName += '_resize';
-    }
+  return fileName + appendString;
+}
 
-    if (options.doBasis === true) {
-      const startSize = documentBinary.byteLength;
+async function doResize(document, documentBinary, options, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
 
-      document.createTexture('')
+  await document.transform(textureResize({
+    size: [options.textureResolutionWidth, options.textureResolutionHeight],
+    filter: options.resamplingFilter,
+  }));
+  documentBinary = await io.writeBinary(document);
 
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
+  const endSize = documentBinary.byteLength;
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'basis',
-        startSize,
-        endSize,
-      });
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'resize',
+    startSize,
+    endSize,
+  });
 
-      outFileName += '_ktx2';
-    }
+  return fileName + appendString;
+}
 
-    if (options.doDraco === true) {
-      const startSize = documentBinary.byteLength;
+async function doBasis(document, documentBinary, options, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
 
-      document.createExtension(DracoMeshCompression)
+  documentBinary = await io.writeBinary(document);
+
+  const endSize = documentBinary.byteLength;
+
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'basis',
+    startSize,
+    endSize,
+  });
+
+  return fileName + appendString;
+}
+
+async function doDraco(document, documentBinary, options, fileName, appendString = '') {
+  const startSize = documentBinary.byteLength;
+
+  io.registerDependencies({
+    'draco3d.decoder': await draco3d.createDecoderModule(),
+    'draco3d.encoder': await draco3d.createEncoderModule(),
+  });
+
+  document.createExtension(DracoMeshCompression)
         .setRequired(true)
         .setEncoderOptions({
           decodeSpeed: options.decodeSpeed,
@@ -212,18 +204,59 @@ async function doPack(filePath, outputPath, options = {}) {
           }
         });
 
-      documentBinary = await io.writeBinary(document);
-      
-      const endSize = documentBinary.byteLength;
+  documentBinary = await io.writeBinary(document);
 
-      parentPort.postMessage({
-        type: 'sizereport',
-        action: 'draco',
-        startSize,
-        endSize,
-      });
+  const endSize = documentBinary.byteLength;
 
-      outFileName += '_draco';
+  parentPort.postMessage({
+    type: 'sizereport',
+    action: 'draco',
+    startSize,
+    endSize,
+  });
+
+  return fileName + appendString;
+}
+
+async function doPack(filePath, outputPath, options = {}) {  
+  try {
+    if (!filePath) throw new Error('No file path specified');
+    if (!outputPath) throw new Error('No output path specified');
+
+    const filePathInfo = path.parse(filePath);
+    const document = await io.read(filePath);
+    let documentBinary = await io.writeBinary(document);
+    const extension = filePathInfo.ext;
+    let outFileName = filePathInfo.name;
+
+    document.setLogger(new Logger(Logger.Verbosity.DEBUG));
+
+    if (options.doDedupe === true) {
+      outFileName = await doDedupe(document, documentBinary, outFileName);
+    }
+
+    if (options.doInstancing === true) {
+      outFileName = await doInstancing(document, documentBinary, outFileName, '_instance');
+    }
+
+    if (options.doReorder === true) {
+      outFileName = await doReorder(document, documentBinary, outFileName, '_reorder');
+    }
+
+    if (options.doWeld === true) {
+      outFileName = await doWeld(document, documentBinary, outFileName, '_weld');
+    }
+
+    if (options.doResize === true) {
+      outFileName = await doResize(document, documentBinary, options, outFileName, '_resize');
+    }
+
+    if (options.doBasis === true) {
+      outFileName = await doBasis(document, documentBinary, options, outFileName, '_ktx2');
+    }
+
+    if (options.doDraco === true) {
+      outFileName = await doDraco(document, documentBinary, options, outFileName, '_draco');
     }
 
     outFileName += '_packed' + extension;
