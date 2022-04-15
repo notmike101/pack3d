@@ -50,9 +50,7 @@ const resizeObserver = new ResizeObserver(resize);
 function pointerUpEventHandler(): void {
   isGrabbing.value = false;
 
-  if (camera !== null) {
-    emitCameraPosition();
-  }
+  emitCameraPosition();
 }
 
 function pointerDownEventHandler(): void {
@@ -60,18 +58,22 @@ function pointerDownEventHandler(): void {
 }
 
 function emitCameraPosition(): void {
-  emit('cameraMove', {
-    position: {
-      x: camera?.position.x,
-      y: camera?.position.y,
-      z: camera?.position.z,
-    },
-    target: {
-      x: camera?.target.x,
-      y: camera?.target.y,
-      z: camera?.target.z,
-    },
-  })
+  if (camera !== null) {
+    const cameraPosition: CameraPosition = {
+      position: {
+        x: camera?.position.x,
+        y: camera?.position.y,
+        z: camera?.position.z,
+      },
+      target: {
+        x: camera?.target.x,
+        y: camera?.target.y,
+        z: camera?.target.z,
+      },
+    };
+
+    emit('cameraMove', cameraPosition);
+  }
 }
 
 function pointerMoveEventHandler(): void {
@@ -106,7 +108,7 @@ function engineRenderLoop(): void {
 }
 
 function updateCameraPosition(cameraPosition: CameraPosition) {
-  if (camera) {
+  if (camera !== null) {
     camera.position = new Vector3(cameraPosition.position.x, cameraPosition.position.y, cameraPosition.position.z);
     camera.target = new Vector3(cameraPosition.target.x, cameraPosition.target.y, cameraPosition.target.z);
     
@@ -132,23 +134,23 @@ function resize(): void {
   }
 }
 
-onUpdated((): void => {
+function onUpdatedHandler(): void {
   if (props.cameraPosition !== null) {
     updateCameraPosition(props.cameraPosition);
   }
 
   if (props.model?.path !== loadedModel) {
-      const meshes: SmartArray<AbstractMesh> | [] = scene?.getActiveMeshes() ?? [];
-      
-      meshes.forEach((mesh: AbstractMesh) => {
-        mesh.dispose();
-      });
+    const meshes: SmartArray<AbstractMesh> | [] = scene?.getActiveMeshes() ?? [];
+    
+    meshes.forEach((mesh: AbstractMesh) => {
+      mesh.dispose();
+    });
 
-      addModelToScene(props.model.path);
-    }
-});
+    addModelToScene(props.model.path);
+  }
+}
 
-onMounted((): void => {  
+function onMountedHandler(): void {
   if (canvas.value) {  
     canvas.value.addEventListener('pointerup', pointerUpEventHandler);
     canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
@@ -195,7 +197,10 @@ onMounted((): void => {
       addModelToScene(props.model.path);
     }
   }
-});
+}
+
+onUpdated(onUpdatedHandler);
+onMounted(onMountedHandler);
 </script>
 
 <template>

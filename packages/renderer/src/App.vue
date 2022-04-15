@@ -119,7 +119,30 @@ function updateCameraPosition(event: CameraPosition) {
   cameraPosition.value = event;
 }
 
-watch(errorMessage, () => {
+function onPackSuccess(event: Event, data: any): void {
+  isProcessing.value = false;
+  outputFile.value = data.file;
+  outputFileSize.value = data.file.binary.length;
+
+  addLog('Packing successful. Reduced file size by ' + (100 - (data.file.binary.length / inputFileSize.value) * 100).toFixed(2) + '%.');
+}
+
+function onPackError(event: Event, data: any): void {
+  errorMessage.value = data.error.message;
+  isProcessing.value = false;
+
+  addLog('Error: ' + data.error.message);
+}
+
+function onPackSizeReport(event: Event, data: any): void {
+  addLog(`Action ${data.action} reduced file size by ${(100 - (data.endSize / data.startSize) * 100).toFixed(2)}%.`);
+}
+
+function onLoggingEvent(event: Event, data: any): void {
+  addLog(`[${data.verbosity}] ${data.text}`);
+}
+
+function errorWatcher(): void {
   if (errorMessageTimeout) {
     clearTimeout(errorMessageTimeout);
   }
@@ -129,30 +152,13 @@ watch(errorMessage, () => {
       errorMessage.value = '';
     }, 5000);
   }
-});
+}
 
-ipcRenderer.on('logging', (event: any, data: any) => {
-  addLog(`[${data.verbosity}] ${data.text}`);
-});
-
-ipcRenderer.on('pack-success', (event: Event, data: any): void => {
-  isProcessing.value = false;
-  outputFile.value = data.file;
-  outputFileSize.value = data.file.binary.length;
-
-  addLog('Packing successful. Reduced file size by ' + (100 - (data.file.binary.length / inputFileSize.value) * 100).toFixed(2) + '%.');
-});
-
-ipcRenderer.on('pack-error', (event: Event, data: any): void => {
-  errorMessage.value = data.error.message;
-  isProcessing.value = false;
-
-  addLog('Error: ' + data.error.message);
-});
-
-ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
-  addLog(`Action ${data.action} reduced file size by ${(100 - (data.endSize / data.startSize) * 100).toFixed(2)}%.`);
-});
+watch(errorMessage, errorWatcher);
+ipcRenderer.on('logging', onLoggingEvent);
+ipcRenderer.on('pack-success', onPackSuccess);
+ipcRenderer.on('pack-error', onPackError);
+ipcRenderer.on('pack-sizereport', onPackSizeReport);
 </script>
 
 <template>
