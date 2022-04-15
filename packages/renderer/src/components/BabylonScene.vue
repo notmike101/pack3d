@@ -13,6 +13,8 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
 import type { Ref } from 'vue';
 import type { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import type { SmartArray } from '@babylonjs/core/Misc/smartArray';
 
 interface CameraPosition {
   target: {
@@ -42,8 +44,9 @@ let engine: Engine | null = null;
 let scene: Scene | null = null;
 let camera: ArcRotateCamera | null = null;
 let loadedModel: any = null;
+let renderNextFrame: boolean = false;
 
-function pointerUpEventHandler() {
+function pointerUpEventHandler(): void {
   isGrabbing.value = false;
 
   if (camera !== null) {
@@ -51,11 +54,11 @@ function pointerUpEventHandler() {
   }
 }
 
-function pointerDownEventHandler() {
+function pointerDownEventHandler(): void {
   isGrabbing.value = true;
 }
 
-function emitCameraPosition() {
+function emitCameraPosition(): void {
   emit('cameraMove', {
     position: {
       x: camera?.position.x,
@@ -70,36 +73,59 @@ function emitCameraPosition() {
   })
 }
 
-function pointerMoveEventHandler() {
+function pointerMoveEventHandler(): void {
   if (isGrabbing.value === true && camera !== null) {
+    renderNextFrame = true;
     emitCameraPosition();
   }
 }
 
-onUpdated(() => {
-  if (props.cameraPosition !== null && camera !== null) {
-    const { target: newTarget, position: newPosition } = props.cameraPosition;
+function modelAddToSceneSuccess(): void {
+  renderNextFrame = true;
+}
 
-    camera.target = new Vector3(newTarget.x, newTarget.y, newTarget.z);
-    camera.position = new Vector3(newPosition.x, newPosition.y, newPosition.z);
+function addModelToScene(model: string): void {
+  loadedModel = model;
+
+  SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
+    if (loader.name === 'gltf') {
+      (loader as GLTFFileLoader).animationStartMode = 0;
+    }
+  });
+
+  SceneLoader.Append(model, undefined, undefined, modelAddToSceneSuccess);
+}
+
+function engineRenderLoop(): void {
+  if (scene && renderNextFrame === true) {
+    renderNextFrame = false;
+
+    scene.render();
+  }
+}
+
+function updateCameraPosition(cameraPosition: CameraPosition) {
+  if (camera) {
+    camera.position = new Vector3(cameraPosition.position.x, cameraPosition.position.y, cameraPosition.position.z);
+    camera.target = new Vector3(cameraPosition.target.x, cameraPosition.target.y, cameraPosition.target.z);
+    
+    renderNextFrame = true;
+  }
+}
+
+onUpdated((): void => {
+  if (props.cameraPosition !== null) {
+    updateCameraPosition(props.cameraPosition);
   }
 
   if (props.model?.path !== loadedModel) {
-      const meshes = scene?.getActiveMeshes();
+      const meshes: SmartArray<AbstractMesh> | undefined = scene?.getActiveMeshes();
       
-      meshes?.forEach((mesh) => {
+      meshes?.forEach((mesh: AbstractMesh) => {
         mesh.dispose();
       });
 
-      loadedModel = props.model.path;
-
-      SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
-        if (loader.name === 'gltf') {
-          (loader as GLTFFileLoader).animationStartMode = 0;
-        }
-      });
-
-      SceneLoader.Append(props.model.path);
+      addModelToScene(props.model.path);
     }
 });
 
@@ -118,10 +144,7 @@ onMounted((): void => {
     camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
 
     if (props.cameraPosition !== null) {
-      const { target: newTarget, position: newPosition } = props.cameraPosition;
-
-      camera.target = new Vector3(newTarget.x, newTarget.y, newTarget.z);
-      camera.position = new Vector3(newPosition.x, newPosition.y, newPosition.z);
+      updateCameraPosition(props.cameraPosition);
     } else {
       emitCameraPosition();
     }
@@ -145,22 +168,10 @@ onMounted((): void => {
 
     camera.attachControl(false);
 
-    engine.runRenderLoop((): void => {
-      if (scene) {
-        scene.render();
-      }
-    });
-
-    SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
-      if (loader.name === 'gltf') {
-        (loader as GLTFFileLoader).animationStartMode = 0;
-      }
-    });
+    engine.runRenderLoop(engineRenderLoop);
 
     if (props.model) {
-      loadedModel = props.model.path;
-
-      SceneLoader.Append(props.model.path);
+      addModelToScene(props.model.path);
     }
   }
 });
