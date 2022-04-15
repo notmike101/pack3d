@@ -113,6 +113,10 @@ function updateCameraPosition(cameraPosition: CameraPosition) {
   }
 }
 
+function wheelEventHandler(): void {
+  renderNextFrame = true;
+}
+
 onUpdated((): void => {
   if (props.cameraPosition !== null) {
     updateCameraPosition(props.cameraPosition);
@@ -134,12 +138,15 @@ onMounted((): void => {
     canvas.value.addEventListener('pointerup', pointerUpEventHandler);
     canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
     canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
+    canvas.value.addEventListener('wheel', wheelEventHandler);
 
     canvas.value.style.width = '100%';
     canvas.value.style.height = '100%';
 
     engine = new Engine(canvas.value);
     scene = new Scene(engine);
+
+    scene.createDefaultEnvironment();
 
     camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
 
