@@ -140,9 +140,7 @@ function onUpdatedHandler(): void {
   }
 
   if (props.model?.path !== loadedModel) {
-    const meshes: SmartArray<AbstractMesh> | [] = scene?.getActiveMeshes() ?? [];
-    
-    meshes.forEach((mesh: AbstractMesh) => {
+    scene!.meshes.forEach((mesh: AbstractMesh) => {
       mesh.dispose();
     });
 
