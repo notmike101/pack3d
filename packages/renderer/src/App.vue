@@ -431,7 +431,7 @@ $font-size: 12px;
     }
 
     fieldset {
-      padding: 7px 5px 5px 5px;
+      padding: 5px;
       margin: 5px;
       position: relative;
       border-width: 1px;
