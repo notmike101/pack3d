@@ -17,6 +17,7 @@ interface CameraPosition {
   }
 }
 
+const activeTab = ref<string>('general');
 const inputFile = ref<File | null>(null);
 const outputFile = ref<File | null>(null);
 const doDedupe = ref<boolean>(false);
@@ -155,6 +156,10 @@ function errorWatcher(): void {
   }
 }
 
+function switchTab(tabIdentifier: string): void {
+  activeTab.value = tabIdentifier;
+}
+
 watch(errorMessage, errorWatcher);
 ipcRenderer.on('logging', onLoggingEvent);
 ipcRenderer.on('pack-success', onPackSuccess);
@@ -166,8 +171,13 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
   <div class="wrapper" @drop="drop" @dragover="dragover" style="flex-direction: row">
     <aside v-if="inputFile">
       <h1 class="file-name">Options</h1>
+      <div class="tabs">
+        <div class="tab" :class="{ active: activeTab === 'general' }" @click="switchTab('general')">General</div>
+        <div class="tab" :class="{ active: activeTab === 'texture' }" @click="switchTab('texture')">Texture</div>
+        <div class="tab" :class="{ active: activeTab === 'vertex' }" @click="switchTab('vertex')">Vertex</div>
+      </div>
       <div class="top-options">
-        <fieldset>
+        <fieldset v-if="activeTab === 'general'">
           <legend>General Options</legend>
           <div class="input-group">
             <input type="checkbox" id="doDedupe" v-model="doDedupe" />
@@ -186,7 +196,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
             <label for="doInstancing">Instancing</label>
           </div>
         </fieldset>
-        <fieldset>
+        <fieldset v-if="activeTab === 'texture'">
           <legend>Texture Resize Options</legend>
           <div class="input-group">
             <label for="doResize">Enable Texture Resize</label>
@@ -222,14 +232,21 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
             </div>
           </div>
         </fieldset>
-        <fieldset>
+        <fieldset v-if="activeTab === 'texture'">
           <legend>Texture Compression Options</legend>
           <div class="input-group">
             <label for="doBasis">Enable Basis Universal</label>
             <input type="checkbox" id="doBasis" v-model="doBasis" />
           </div>
+          <div class="input-group">
+            <label for="basisMethod">Method</label>
+            <div style="display: flex; flex-direction: row;align-items: center;">
+              <div style="border: 1px solid black;color: white;background-color: #2c3e50;padding: 0 5px;">ETC1S</div>
+              <div style="border: 1px solid black;padding: 0 5px">UASTC</div>
+            </div>
+          </div>
         </fieldset>
-        <fieldset>
+        <fieldset v-if="activeTab === 'vertex'">
           <legend>Vertex Compression Options</legend>
           <div class="input-group">
             <label for="doDraco">Enable Draco</label>
@@ -408,6 +425,41 @@ $font-size: 12px;
     text-align: left;
     display: flex;
     flex-direction: column;
+
+    .tabs {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      
+      .tab {
+        display: flex;
+        border: 1px solid #cacaca;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        color:rgb(170, 170, 170);
+        cursor: pointer;
+        font-size: $font-size;
+
+        &.active {
+          background-color: #2c3e50;
+          color: white;
+          border: 1px solid #2c3e50;
+          position: relative;
+
+          &:after {
+            position: absolute;
+            top: -3px;
+            background-color: #2c3e50;
+            content: ' ';
+            height: 2px;
+            width: calc(100% + 2px);
+            left: -1px;
+            border-radius: 5px 5px 0 0;
+          }
+        }
+      }
+    }
 
     h1 {
       margin: 0;
