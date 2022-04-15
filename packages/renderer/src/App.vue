@@ -73,6 +73,7 @@ function drop(event: DragEvent): void {
         inputFile.value = file;
         outputPath.value = path.dirname(file.path);
         inputFileSize.value = file.size;
+        outputFile.value = null;
       }
     }
   }
