@@ -87,8 +87,43 @@ function modelAddToSceneSuccess(): void {
   renderNextFrame = true;
 }
 
+function createEnvironment() {
+  if (engine) {
+    engine.dispose();
+  }
+
+  engine = new Engine(canvas.value);
+  scene = new Scene(engine);
+  scene.createDefaultEnvironment();
+
+  camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
+
+  engine.inputElement = canvas.value;
+
+  camera.allowUpsideDown = false;
+  camera.minZ = 0.1;
+  camera.maxZ = 2000;
+  camera.lowerRadiusLimit = 1;
+  camera.fov = 0.767945;
+  camera.inertia = 0,
+  camera.panningInertia = 0;
+  camera.angularSensibilityX = 350;
+  camera.angularSensibilityY = 350;
+  camera.panningSensibility = 350;
+  camera.wheelPrecision = 10;
+  camera.pinchPrecision = 500;
+
+  camera.attachControl(false);
+
+  engine.runRenderLoop(engineRenderLoop);
+
+  renderNextFrame = true;
+}
+
 function addModelToScene(model: string): void {
   loadedModel = model;
+
+  createEnvironment();
 
   SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
     if (loader.name === 'gltf') {
@@ -159,12 +194,7 @@ function onMountedHandler(): void {
       resizeObserver.observe(canvas.value.parentElement);
     }
 
-    engine = new Engine(canvas.value);
-    scene = new Scene(engine);
-
-    scene.createDefaultEnvironment();
-
-    camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
+    createEnvironment();
 
     if (props.cameraPosition !== null) {
       updateCameraPosition(props.cameraPosition);
@@ -172,28 +202,11 @@ function onMountedHandler(): void {
       emitCameraPosition();
     }
 
-    engine.inputElement = canvas.value;
-
-    camera.allowUpsideDown = false;
-    camera.minZ = 0.1;
-    camera.maxZ = 2000;
-    camera.lowerRadiusLimit = 1;
-    camera.fov = 0.767945;
-    camera.inertia = 0,
-    camera.panningInertia = 0;
-    camera.angularSensibilityX = 350;
-    camera.angularSensibilityY = 350;
-    camera.panningSensibility = 350;
-    camera.wheelPrecision = 10;
-    camera.pinchPrecision = 500;
-
-    camera.attachControl(false);
-
-    engine.runRenderLoop(engineRenderLoop);
-
     if (props.model) {
       addModelToScene(props.model.path);
     }
+
+    renderNextFrame = true;
   }
 }
 
