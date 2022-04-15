@@ -12,6 +12,7 @@
     "node": ">=14.17.0"
   },
   "devDependencies": {
+    "@types/node": "^17.0.24",
     "@vitejs/plugin-vue": "^2.1.0",
     "electron": "^18.0.4",
     "electron-builder": "^23.0.3",
