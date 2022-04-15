@@ -68,6 +68,15 @@ const io = new NodeIO()
     TextureTransform,
   ]);
 
+function reportSize(action, startSize, endSize) {
+  parentPort.postMessage({
+    type: 'sizereport',
+    action,
+    startSize,
+    endSize,
+  });
+}
+
 async function doDedupe(document, documentBinary, fileName, appendString = '') {
   const startSize = documentBinary.byteLength;
 
@@ -76,12 +85,7 @@ async function doDedupe(document, documentBinary, fileName, appendString = '') {
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'dedupe',
-    startSize,
-    endSize,
-  });
+  reportSize('dedupe', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -94,12 +98,7 @@ async function doInstancing(document, documentBinary, fileName, appendString = '
 
   const endSize = doumentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'instance',
-    startSize,
-    endSize,
-  });
+  reportSize('instance', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -114,12 +113,7 @@ async function doReorder(document, documentBinary, fileName, appendString = '') 
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'reorder',
-    startSize,
-    endSize,
-  });
+  reportSize('reorder', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -132,12 +126,7 @@ async function doWeld(document, documentBinary, fileName, appendString = '') {
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'weld',
-    startSize,
-    endSize,
-  });
+  reportSize('weld', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -153,12 +142,7 @@ async function doResize(document, documentBinary, options, fileName, appendStrin
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'resize',
-    startSize,
-    endSize,
-  });
+  reportSize('resize', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -170,12 +154,7 @@ async function doBasis(document, documentBinary, options, fileName, appendString
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'basis',
-    startSize,
-    endSize,
-  });
+  reportSize('basis', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -208,12 +187,7 @@ async function doDraco(document, documentBinary, options, fileName, appendString
 
   const endSize = documentBinary.byteLength;
 
-  parentPort.postMessage({
-    type: 'sizereport',
-    action: 'draco',
-    startSize,
-    endSize,
-  });
+  reportSize('draco', startSize, endSize);
 
   return fileName + appendString;
 }
@@ -262,8 +236,6 @@ async function doPack(filePath, outputPath, options = {}) {
     outFileName += '_packed' + extension;
 
     const outFile = path.resolve(outputPath + '/' + outFileName);
-
-    if (outFile === filePath) throw new Error('No modfiications made');
 
     await io.write(outFile, document);
 
