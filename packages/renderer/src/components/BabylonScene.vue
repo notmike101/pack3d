@@ -45,6 +45,7 @@ let scene: Scene | null = null;
 let camera: ArcRotateCamera | null = null;
 let loadedModel: any = null;
 let renderNextFrame: boolean = false;
+const resizeObserver = new ResizeObserver(resize);
 
 function pointerUpEventHandler(): void {
   isGrabbing.value = false;
@@ -117,6 +118,22 @@ function wheelEventHandler(): void {
   renderNextFrame = true;
 }
 
+function resize(): void {
+  if (engine && canvas.value) {
+    const { parentElement } = canvas.value;
+
+    canvas.value.remove();
+
+    // const { width, height } = parentElement.getBoundingClientRect();
+
+    // engine.setSize(width | 0, height | 0, false);
+
+    parentElement?.firstElementChild?.insertAdjacentElement('afterend', canvas.value)
+
+    renderNextFrame = true;
+  }
+}
+
 onUpdated((): void => {
   if (props.cameraPosition !== null) {
     updateCameraPosition(props.cameraPosition);
@@ -139,9 +156,7 @@ onMounted((): void => {
     canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
     canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
     canvas.value.addEventListener('wheel', wheelEventHandler);
-
-    canvas.value.style.width = '100%';
-    canvas.value.style.height = '100%';
+    resizeObserver.observe(canvas.value.parentElement);
 
     engine = new Engine(canvas.value);
     scene = new Scene(engine);
@@ -155,8 +170,6 @@ onMounted((): void => {
     } else {
       emitCameraPosition();
     }
-
-    new HemisphericLight('light', Vector3.Up(), scene);
 
     engine.inputElement = canvas.value;
 
@@ -185,21 +198,15 @@ onMounted((): void => {
 </script>
 
 <template>
-  <div class="canvas-wrapper">
-    <canvas ref="canvas"></canvas>
-  </div>
+  <canvas ref="canvas"></canvas>
 </template>
 
 <style lang="scss" scoped>
-.canvas-wrapper {
-  overflow: hidden;
+canvas {
+  cursor: grab;
   height: 100%;
   width: 100%;
-
-  canvas {
-    cursor: grab;
-    width: 100%;
-    height: 100%;
-  }
+  aspect-ratio: unset;
+  // flex: 1;
 }
 </style>
