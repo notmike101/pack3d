@@ -160,9 +160,8 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
     <aside v-if="inputFile">
       <h1 class="file-name">Options</h1>
       <div class="top-options">
-        <div class="input-group-box">
-          <div class="title">General Options</div>
-
+        <fieldset>
+          <legend>General Options</legend>
           <div class="input-group">
             <input type="checkbox" id="doDedupe" v-model="doDedupe" />
             <label for="doDedupe">Dedupe</label>
@@ -179,9 +178,9 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
             <input type="checkbox" id="doInstancing" v-model="doInstancing" />
             <label for="doInstancing">Instancing</label>
           </div>
-        </div>
-        <div class="input-group-box">
-          <div class="title">Texture Resize Options</div>
+        </fieldset>
+        <fieldset>
+          <legend>Texture Resize Options</legend>
           <div class="input-group">
             <label for="doResize">Enable Texture Resize</label>
             <input type="checkbox" id="doResize" v-model="doResize" />
@@ -215,16 +214,16 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
               </select>
             </div>
           </div>
-        </div>
-        <div class="input-group-box">
-          <div class="title">Texture Compression Options</div>
+        </fieldset>
+        <fieldset>
+          <legend>Texture Compression Options</legend>
           <div class="input-group">
             <label for="doBasis">Enable Basis Universal</label>
             <input type="checkbox" id="doBasis" v-model="doBasis" />
           </div>
-        </div>
-        <div class="input-group-box">
-          <div class="title">Vertex Compression Options</div>
+        </fieldset>
+        <fieldset>
+          <legend>Vertex Compression Options</legend>
           <div class="input-group">
             <label for="doDraco">Enable Draco</label>
             <input type="checkbox" id="doDraco" v-model="doDraco" />
@@ -236,8 +235,8 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
               <option value="sequential">sequential</option>
             </select>
           </div>
-          <div class="input-group-box" style="margin-top: 10px;">
-            <div class="title">Quantization</div>
+          <fieldset>
+            <legend>Quantization</legend>
             <div class="input-group">
               <label for="quantizationVolume">Volume</label>
               <select :disabled="doDraco === false" v-model="quantizationVolume" id="quantizationVolume">
@@ -265,9 +264,9 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
               <label for="quantizationTexcoord">Texcord Bits</label>
               <input type="number" :disabled="doDraco === false" v-model="quantizationTexcoord" id="quantizationTexcoord">
             </div>
-          </div>
-          <div class="input-group-box">
-            <div class="title">Speed</div>
+          </fieldset>
+          <fieldset>
+            <legend>Speed</legend>
             <div class="input-group">
               <label for="encodeSpeed">Encode</label>
               <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="encodeSpeed" id="encodeSpeed">
@@ -276,8 +275,8 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
               <label for="decodeSpeed">Decode</label>
               <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="decodeSpeed" id="decodeSpeed">
             </div>
-          </div>
-        </div>
+          </fieldset>
+        </fieldset>
       </div>
       <div class="bottom-options">
         <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
@@ -304,11 +303,11 @@ ipcRenderer.on('pack-sizereport', (event: Event, data: any): void => {
             </div>
           </div>
         </div>
-        <div class="log">
+        <footer class="log">
           <div class="log-content">
             <p v-for="log in logs">{{ log }}</p>
           </div>
-        </div>
+        </footer>
       </div>
     </main>
     <main v-if="!inputFile">
@@ -425,25 +424,19 @@ $font-size: 12px;
       border-top: 1px solid black;
     }
 
-    .input-group-box {
-      display: flex;
-      flex-direction: column;
-      border: 1px solid black;
+    fieldset {
       padding: 7px 5px 5px 5px;
-      margin: 5px 5px 10px 5px;
+      margin: 5px;
       position: relative;
+      border-width: 1px;
 
       &:first-of-type {
         margin-top: 6px;
       }
 
-      .title {
-        position: absolute;
-        top: -8px;
-        background-color: #ecf0f1;
-        font-size: $font-size;
-        padding: 0 2px;
+      legend {
         font-weight: bold;
+        font-size: $font-size;
       }
     }
 
@@ -466,7 +459,6 @@ $font-size: 12px;
         cursor: pointer;
         padding: 0;
         flex: 2;
-        // width: fit-content;
         font-size: $font-size;
       }
 
