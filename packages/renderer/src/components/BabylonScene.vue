@@ -138,6 +138,8 @@ function addModelToScene(model: string): void {
   });
 
   SceneLoader.Append(model, undefined, undefined, modelAddToSceneSuccess);
+
+  renderNextFrame = true;
 }
 
 function engineRenderLoop(): void {
