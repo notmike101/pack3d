@@ -1,3 +1,8 @@
+/**
+ * Licensed Materials - Property of Michael Orozco
+ * (C) Copyright Michael Orozco 2022
+ */
+
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { release } from 'os';
 import { join as pathJoin } from 'path';

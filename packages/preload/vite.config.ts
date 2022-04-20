@@ -1,3 +1,8 @@
+/**
+ * Licensed Materials - Property of Michael Orozco
+ * (C) Copyright Michael Orozco 2022
+ */
+
 import { builtinModules } from 'module'
 import { defineConfig } from 'vite'
 import pkg from '../../package.json'

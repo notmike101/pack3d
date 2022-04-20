@@ -1,3 +1,9 @@
+<!--
+/**
+ * Licensed Materials - Property of Michael Orozco
+ * (C) Copyright Michael Orozco 2022
+ */
+-->
 <script setup lang="ts">
 import '@babylonjs/loaders/gLTF';
 import '@babylonjs/core/Helpers/sceneHelpers';

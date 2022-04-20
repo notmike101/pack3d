@@ -1,3 +1,8 @@
+/**
+ * Licensed Materials - Property of Michael Orozco
+ * (C) Copyright Michael Orozco 2022
+ */
+
 
 import fs from 'fs'
 import { ipcRenderer } from 'electron'

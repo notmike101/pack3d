@@ -1,11 +1,8 @@
-
-
 /**
- * https://tobiasahlin.com/spinkit
- * https://connoratherton.com/loaders
- * https://projects.lukehaas.me/css-loaders
- * https://matejkustec.github.io/SpinThatShit
+ * Licensed Materials - Property of Michael Orozco
+ * (C) Copyright Michael Orozco 2022
  */
+
 export function useLoading() {
   const className = `loaders-css__square-spin`
   const styleContent = `
