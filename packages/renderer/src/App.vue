@@ -128,11 +128,12 @@ function updateCameraPosition(event: CameraPosition) {
 }
 
 function onPackSuccess(event: Event, data: any): void {
+  console.log(data);
   isProcessing.value = false;
   outputFile.value = data.file;
-  outputFileSize.value = data.file.binary.length;
+  outputFileSize.value = data.file.binary.byteLength;
 
-  addLog('Packing successful. Reduced file size by ' + (100 - (data.file.binary.length / inputFileSize.value) * 100).toFixed(2) + '%.');
+  addLog('Packing successful. Reduced file size by ' + (100 - (outputFileSize.value / inputFileSize.value) * 100).toFixed(2) + '%.');
 }
 
 function onPackError(event: Event, data: any): void {

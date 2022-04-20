@@ -243,6 +243,7 @@ async function doPack(filePath, outputPath, options = {}) {
     const outFile = path.resolve(outputPath + '/' + outFileName);
 
     await io.write(outFile, document);
+    documentBinary = await io.writeBinary(document);
 
     return {
       name: outFileName,
