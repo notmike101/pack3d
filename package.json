@@ -1,5 +1,5 @@
 {
-  "name": "immtech-pack3d",
+  "name": "pack3d",
   "version": "1.0.0",
   "main": "dist/main/index.cjs",
   "author": "Mike Orozco <mike.orozco@thermofisher.com>",

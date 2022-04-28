@@ -1,5 +1,5 @@
 {
-  "appId": "ImmTechPack3D",
+  "appId": "Pack3D",
   "asar": true,
   "directories": {
     "output": "release/${version}"
@@ -29,5 +29,13 @@
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
     "deleteAppDataOnUninstall": false
-  }
+  },
+  "extraFiles": [
+    "./ktx.dll",
+    "./ktx2check.exe",
+    "./ktx2ktx2.exe",
+    "./ktxinfo.exe",
+    "./ktxsc.exe",
+    "./toktx.exe"
+  ]
 }
