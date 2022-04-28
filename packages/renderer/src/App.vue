@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import BabylonScene from './components/BabylonScene.vue';
+import TitleBar from './components/TitleBar.vue';
 import { ipcRenderer } from 'electron';
 import path from 'path';
 
@@ -26,9 +27,9 @@ interface CameraPosition {
 const activeTab = ref<string>('general');
 const inputFile = ref<File | null>(null);
 const outputFile = ref<File | null>(null);
-const doDedupe = ref<boolean>(false);
-const doReorder = ref<boolean>(false);
-const doWeld = ref<boolean>(false);
+const doDedupe = ref<boolean>(true);
+const doReorder = ref<boolean>(true);
+const doWeld = ref<boolean>(true);
 const doInstancing = ref<boolean>(false);
 const doResize = ref<boolean>(false);
 const doBasis = ref<boolean>(false);
@@ -43,6 +44,12 @@ const quantizationGeneric = ref<number>(12);
 const quantizationNormal = ref<number>(10);
 const quantizationPosition = ref<number>(14);
 const quantizationTexcoord = ref<number>(12);
+const basisMethod = ref<string>('png');
+const pngFormatFilter = ref<string>('all');
+const basisQuality = ref<number>(128);
+const etc1sResizeNPOT = ref<boolean>(true);
+const uastcLevel = ref<number>(2);
+const usdtcResizeNPOT = ref<boolean>(true);
 const encodeSpeed = ref<number>(5);
 const decodeSpeed = ref<number>(5);
 const outputPath = ref<string>('');
@@ -167,6 +174,12 @@ function switchTab(tabIdentifier: string): void {
   activeTab.value = tabIdentifier;
 }
 
+function changeBasisMethod(method: string): void {
+  if (doBasis.value === true) {
+    basisMethod.value = method;
+  }
+}
+
 watch(errorMessage, errorWatcher);
 ipcRenderer.on('logging', onLoggingEvent);
 ipcRenderer.on('pack-success', onPackSuccess);
@@ -175,177 +188,217 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
 </script>
 
 <template>
-  <div class="wrapper" @drop="drop" @dragover="dragover" style="flex-direction: row">
-    <aside v-if="inputFile">
-      <h1 class="file-name">Options</h1>
-      <div class="tabs">
-        <div class="tab" :class="{ active: activeTab === 'general' }" @click="switchTab('general')">General</div>
-        <div class="tab" :class="{ active: activeTab === 'texture' }" @click="switchTab('texture')">Texture</div>
-        <div class="tab" :class="{ active: activeTab === 'vertex' }" @click="switchTab('vertex')">Vertex</div>
-      </div>
-      <div class="top-options">
-        <fieldset v-if="activeTab === 'general'">
-          <legend>General Options</legend>
-          <div class="input-group">
-            <input type="checkbox" id="doDedupe" v-model="doDedupe" />
-            <label for="doDedupe">Dedupe</label>
-          </div>
-          <div class="input-group">
-            <input type="checkbox" id="doReorder" v-model="doReorder" />
-            <label for="doReorder">Reorder</label>
-          </div>
-          <div class="input-group">
-            <input type="checkbox" id="doWeld" v-model="doWeld" />
-            <label for="doWeld">Weld</label>
-          </div>
-          <div class="input-group">
-            <input type="checkbox" id="doInstancing" v-model="doInstancing" />
-            <label for="doInstancing">Instancing</label>
-          </div>
-        </fieldset>
-        <fieldset v-if="activeTab === 'texture'">
-          <legend>Texture Resize Options</legend>
-          <div class="input-group">
-            <label for="doResize">Enable Texture Resize</label>
-            <input type="checkbox" id="doResize" v-model="doResize" />
-          </div>
-          <div class="input-group">
-            <label for="resamplingFilter">Resampling Filter</label>
-            <select :disabled="doResize === false" id="resamplingFilter" v-model="resamplingFilter">
-              <option value="lanczos3">lanczos3</option>
-              <option value="lanczos2">lanczos2</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label for="textureResolution">Texture Resolution</label>
-            <div style="display: flex; flex-direction: row;align-items: center">
-              <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionWidth">
-                <option :value="128">128</option>
-                <option :value="256">256</option>
-                <option :value="512">512</option>
-                <option :value="1024">1024</option>
-                <option :value="2048">2048</option>
-                <option :value="4096">4096</option>
-              </select>
-              <span style="padding: 0 2px">x</span>
-              <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionHeight">
-                <option :value="128">128</option>
-                <option :value="256">256</option>
-                <option :value="512">512</option>
-                <option :value="1024">1024</option>
-                <option :value="2048">2048</option>
-                <option :value="4096">4096</option>
-              </select>
-            </div>
-          </div>
-        </fieldset>
-        <fieldset v-if="activeTab === 'texture'">
-          <legend>Texture Compression Options</legend>
-          <div class="input-group">
-            <label for="doBasis">Enable Texture Compression</label>
-            <input type="checkbox" id="doBasis" v-model="doBasis" />
-          </div>
-          <div class="input-group">
-            <label for="basisMethod">Method</label>
-            <div style="display: flex; flex-direction: row;align-items: center;">
-              <div style="border: 1px solid black;color: white;background-color: #2c3e50;padding: 0 5px;">ETC1S</div>
-              <div style="border: 1px solid black;padding: 0 5px">UASTC</div>
-            </div>
-          </div>
-        </fieldset>
-        <fieldset v-if="activeTab === 'vertex'">
-          <legend>Vertex Compression Options</legend>
-          <div class="input-group">
-            <label for="doDraco">Enable Draco</label>
-            <input type="checkbox" id="doDraco" v-model="doDraco" />
-          </div>
-          <div class="input-group">
-            <label for="vertexCompressionMethod">Method</label>
-            <select :disabled="doDraco === false" id="vertexCompressionMethod" v-model="vertexCompressionMethod">
-              <option value="edgebreaker">edgebreaker</option>
-              <option value="sequential">sequential</option>
-            </select>
-          </div>
-          <fieldset>
-            <legend>Quantization</legend>
-            <div class="input-group">
-              <label for="quantizationVolume">Volume</label>
-              <select :disabled="doDraco === false" v-model="quantizationVolume" id="quantizationVolume">
-                <option value="mesh">Mesh</option>
-                <option value="scene">Scene</option>
-              </select>
-            </div>
-            <div class="input-group">
-              <label for="quantizationColor">Color Bits</label>
-              <input type="number" :disabled="doDraco === false" v-model="quantizationColor" id="quantizationColor">
-            </div>
-            <div class="input-group">
-              <label for="quantizationGeneric">Other Bits</label>
-              <input type="number" :disabled="doDraco === false" v-model="quantizationGeneric" id="quantizationGeneric">
-            </div>
-            <div class="input-group">
-              <label for="quantizationNormal">Normal Bits</label>
-              <input type="number" :disabled="doDraco === false" v-model="quantizationNormal" id="quantizationNormal">
-            </div>
-            <div class="input-group">
-              <label for="quantizationPosition">Position Bits</label>
-              <input type="number" :disabled="doDraco === false" v-model="quantizationPosition" id="quantizationPosition">
-            </div>
-            <div class="input-group">
-              <label for="quantizationTexcoord">Texcord Bits</label>
-              <input type="number" :disabled="doDraco === false" v-model="quantizationTexcoord" id="quantizationTexcoord">
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>Speed</legend>
-            <div class="input-group">
-              <label for="encodeSpeed">Encode</label>
-              <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="encodeSpeed" id="encodeSpeed">
-            </div>
-            <div class="input-group">
-              <label for="decodeSpeed">Decode</label>
-              <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="decodeSpeed" id="decodeSpeed">
-            </div>
-          </fieldset>
-        </fieldset>
-      </div>
-      <div class="bottom-options">
-        <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
-          <span v-if="isProcessing === false">Pack</span>
-          <span v-if="isProcessing === true">Processing...</span>
-        </button>
-      </div>
-    </aside>
-    <main v-if="inputFile">
-      <div style="display: flex; flex-direction: column;flex: 1;">
-        <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
-          <div class="canvas-container">
-            <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
-            <div class="canvas-container-info">
-              <p>File Name: {{ inputFile.name }}</p>
-              <p>File Size: {{ formatBytes(inputFileSize) }}</p>
-            </div>
-          </div>
-          <div v-if="outputFile" class="canvas-container">
-            <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
-            <div class="canvas-container-info">
-              <p>File Name: {{ outputFile.name }}</p>
-              <p>File Size: {{ formatBytes(outputFileSize) }}</p>
-            </div>
-          </div>
+  <div class="wrapper" @drop="drop" @dragover="dragover" style="flex-direction: column;">
+    <TitleBar />
+    <div class="wrapper">
+      <aside v-if="inputFile">
+        <h1 class="file-name">Options</h1>
+        <div class="tabs">
+          <div class="tab" :class="{ active: activeTab === 'general' }" @click="switchTab('general')">General</div>
+          <div class="tab" :class="{ active: activeTab === 'texture' }" @click="switchTab('texture')">Texture</div>
+          <div class="tab" :class="{ active: activeTab === 'vertex' }" @click="switchTab('vertex')">Vertex</div>
         </div>
-        <footer class="log">
-          <div class="log-content">
-            <p v-for="log in logs">{{ log }}</p>
+        <div class="top-options">
+          <fieldset v-if="activeTab === 'general'">
+            <legend>General Options</legend>
+            <div class="input-group">
+              <input type="checkbox" id="doDedupe" v-model="doDedupe" />
+              <label for="doDedupe">Dedupe</label>
+            </div>
+            <div class="input-group">
+              <input type="checkbox" id="doReorder" v-model="doReorder" />
+              <label for="doReorder">Reorder</label>
+            </div>
+            <div class="input-group">
+              <input type="checkbox" id="doWeld" v-model="doWeld" />
+              <label for="doWeld">Weld</label>
+            </div>
+            <div class="input-group">
+              <input type="checkbox" id="doInstancing" v-model="doInstancing" />
+              <label for="doInstancing">Instancing</label>
+            </div>
+          </fieldset>
+          <fieldset v-if="activeTab === 'texture'">
+            <legend>Texture Resize Options</legend>
+            <div class="input-group">
+              <label for="doResize">Enable Texture Resize</label>
+              <input type="checkbox" id="doResize" v-model="doResize" />
+            </div>
+            <div class="input-group">
+              <label for="resamplingFilter">Resampling Filter</label>
+              <select :disabled="doResize === false" id="resamplingFilter" v-model="resamplingFilter">
+                <option value="lanczos3">lanczos3</option>
+                <option value="lanczos2">lanczos2</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="textureResolution">Texture Resolution</label>
+              <div style="display: flex; flex-direction: row;align-items: center">
+                <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionWidth">
+                  <option :value="128">128</option>
+                  <option :value="256">256</option>
+                  <option :value="512">512</option>
+                  <option :value="1024">1024</option>
+                  <option :value="2048">2048</option>
+                  <option :value="4096">4096</option>
+                </select>
+                <span style="padding: 0 2px">x</span>
+                <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionHeight">
+                  <option :value="128">128</option>
+                  <option :value="256">256</option>
+                  <option :value="512">512</option>
+                  <option :value="1024">1024</option>
+                  <option :value="2048">2048</option>
+                  <option :value="4096">4096</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset v-if="activeTab === 'texture'">
+            <legend>Texture Compression Options</legend>
+            <div class="input-group">
+              <label for="doBasis">Enable Texture Compression</label>
+              <input type="checkbox" id="doBasis" v-model="doBasis" />
+            </div>
+            <div class="input-group">
+              <label for="basisMethod">Method</label>
+              <div class="radio-select">
+                <div class="item" :class="{ active: basisMethod === 'png', disabled: doBasis === false }" @click="changeBasisMethod('png')">PNG</div>
+                <div class="item" :class="{ active: basisMethod === 'etc1s', disabled: doBasis === false }" @click="changeBasisMethod('etc1s')">ETC1S</div>
+                <div class="item" :class="{ active: basisMethod === 'uastc', disabled: doBasis === false }" @click="changeBasisMethod('uastc')">UASTC</div>
+              </div>
+            </div>
+            <template v-if="basisMethod === 'png'">
+              <div v-if="basisMethod === 'png'" class="input-group">
+                <label for="pngFormatFilter">Format Filter</label>
+                <select id="pngFormatFilter" :disabled="doBasis === false" v-model="pngFormatFilter">
+                  <option value="jpeg">jpeg</option>
+                  <option value="png">png</option>
+                  <option value="all">all</option>
+                </select>
+              </div>
+            </template>
+            <template v-if="basisMethod === 'etc1s'">
+              <div class="input-group">
+                <label for="basisQuality">Quality</label>
+                <input :disabled="doBasis === false" id="basisQuality" type="number" min="1" max="255" step="1" v-model="basisQuality" />
+              </div>
+              <div class="input-group">
+                <label for="etc1sResizeNPOT">Resize NPOT</label>
+                <input :disabled="doBasis === false" type="checkbox" id="etc1sResizeNPOT" v-model="etc1sResizeNPOT" />
+              </div>
+            </template>
+            <template v-if="basisMethod === 'uastc'">
+              <div class="input-group">
+                <label for="uastcLevel">Level</label>
+                <select :disabled="doBasis === false" v-model="uastcLevel" id="uastcLevel">
+                  <option value="0">Fastest</option>
+                  <option value="1">Faster</option>
+                  <option value="2">Default</option>
+                  <option value="3">Slow</option>
+                  <option value="4">Very Slow</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="usdtcResizeNPOT">Resize NPOT</label>
+                <input :disabled="doBasis === false" type="checkbox" id="usdtcResizeNPOT" v-model="usdtcResizeNPOT" />
+              </div>
+            </template>
+          </fieldset>
+          <fieldset v-if="activeTab === 'vertex'">
+            <legend>Vertex Compression Options</legend>
+            <div class="input-group">
+              <label for="doDraco">Enable Draco</label>
+              <input type="checkbox" id="doDraco" v-model="doDraco" />
+            </div>
+            <div class="input-group">
+              <label for="vertexCompressionMethod">Method</label>
+              <select :disabled="doDraco === false" id="vertexCompressionMethod" v-model="vertexCompressionMethod">
+                <option value="edgebreaker">edgebreaker</option>
+                <option value="sequential">sequential</option>
+              </select>
+            </div>
+            <fieldset>
+              <legend>Quantization</legend>
+              <div class="input-group">
+                <label for="quantizationVolume">Volume</label>
+                <select :disabled="doDraco === false" v-model="quantizationVolume" id="quantizationVolume">
+                  <option value="mesh">Mesh</option>
+                  <option value="scene">Scene</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="quantizationColor">Color Bits</label>
+                <input type="number" :disabled="doDraco === false" v-model="quantizationColor" id="quantizationColor">
+              </div>
+              <div class="input-group">
+                <label for="quantizationGeneric">Other Bits</label>
+                <input type="number" :disabled="doDraco === false" v-model="quantizationGeneric" id="quantizationGeneric">
+              </div>
+              <div class="input-group">
+                <label for="quantizationNormal">Normal Bits</label>
+                <input type="number" :disabled="doDraco === false" v-model="quantizationNormal" id="quantizationNormal">
+              </div>
+              <div class="input-group">
+                <label for="quantizationPosition">Position Bits</label>
+                <input type="number" :disabled="doDraco === false" v-model="quantizationPosition" id="quantizationPosition">
+              </div>
+              <div class="input-group">
+                <label for="quantizationTexcoord">Texcord Bits</label>
+                <input type="number" :disabled="doDraco === false" v-model="quantizationTexcoord" id="quantizationTexcoord">
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Speed</legend>
+              <div class="input-group">
+                <label for="encodeSpeed">Encode</label>
+                <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="encodeSpeed" id="encodeSpeed">
+              </div>
+              <div class="input-group">
+                <label for="decodeSpeed">Decode</label>
+                <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="decodeSpeed" id="decodeSpeed">
+              </div>
+            </fieldset>
+          </fieldset>
+        </div>
+        <div class="bottom-options">
+          <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
+            <span v-if="isProcessing === false">Pack</span>
+            <span v-if="isProcessing === true">Processing...</span>
+          </button>
+        </div>
+      </aside>
+      <main v-if="inputFile">
+        <div style="display: flex; flex-direction: column;flex: 1;">
+          <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
+            <div class="canvas-container">
+              <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
+              <div class="canvas-container-info">
+                <p>File Name: {{ inputFile.name }}</p>
+                <p>File Size: {{ formatBytes(inputFileSize) }}</p>
+              </div>
+            </div>
+            <div v-if="outputFile" class="canvas-container">
+              <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
+              <div class="canvas-container-info">
+                <p>File Name: {{ outputFile.name }}</p>
+                <p>File Size: {{ formatBytes(outputFileSize) }}</p>
+              </div>
+            </div>
           </div>
-        </footer>
+          <footer class="log">
+            <div class="log-content">
+              <p v-for="log in logs">{{ log }}</p>
+            </div>
+          </footer>
+        </div>
+      </main>
+      <main v-if="!inputFile">
+        <p class="drop-notice">Drop File Into Window To Begin Editing</p>
+      </main>
+      <div v-if="errorMessage" class="error-message">
+        <p><span style="font-weight: bold">Error:</span> {{ errorMessage }}</p>
       </div>
-    </main>
-    <main v-if="!inputFile">
-      <p class="drop-notice">Drop File Into Window To Begin Editing</p>
-    </main>
-    <div v-if="errorMessage" class="error-message">
-      <p><span style="font-weight: bold">Error:</span> {{ errorMessage }}</p>
     </div>
   </div>
 </template>
@@ -388,6 +441,7 @@ $font-size: 12px;
   flex: 1;
   user-select: none;
   overflow: hidden;
+  flex-wrap: wrap;
 
   .log {
     flex: 0 0 150px;
@@ -511,7 +565,7 @@ $font-size: 12px;
       padding: 1px 2px;
       flex-direction: row;
       align-items: center;
-      width: calc(100% - 10px);
+      // width: calc(100% - 10px);
 
       &.col {
         flex-direction: column;
@@ -549,6 +603,45 @@ $font-size: 12px;
 
           &:disabled {
             color: rgb(170, 170, 170);
+          }
+        }
+      }
+
+      .radio-select {
+        $border-radius: 5px;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        outline: 1px solid black;
+        border-radius: $border-radius;
+
+        .item {
+          padding: 1px 5px 0 5px;
+          cursor: pointer;
+
+          &:not(:last-of-type) {
+            border-right: 1px solid black;
+          }
+
+          &:first-of-type {
+            border-top-left-radius: $border-radius;
+            border-bottom-left-radius: $border-radius;
+          }
+
+          &:last-of-type {
+            border-top-right-radius: $border-radius;
+            border-bottom-right-radius: $border-radius;
+          }
+
+          &.active {
+            color: white;
+            background-color: #2c3e50;
+          }
+
+          &.disabled {
+            color: rgb(170, 170, 170);
+            cursor: default;
           }
         }
       }
