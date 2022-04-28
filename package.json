@@ -39,6 +39,8 @@
     "@lottiefiles/vue-lottie-player": "^1.0.5",
     "@types/draco3dgltf": "^1.4.0",
     "draco3dgltf": "^1.5.2",
-    "meshoptimizer": "^0.17.0"
+    "meshoptimizer": "^0.17.0",
+    "micromatch": "^4.0.5",
+    "tmp": "^0.2.1"
   }
 }
