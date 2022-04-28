@@ -2,10 +2,10 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const doDedupe: Ref<boolean> = inject('doDedupe');
-const doReorder: Ref<boolean> = inject('doReorder');
-const doWeld: Ref<boolean> = inject('doWeld');
-const doInstancing: Ref<boolean> = inject('doInstancing');
+const doDedupe: Ref<boolean> = inject('doDedupe')!;
+const doReorder: Ref<boolean> = inject('doReorder')!;
+const doWeld: Ref<boolean> = inject('doWeld')!;
+const doInstancing: Ref<boolean> = inject('doInstancing')!;
 </script>
 
 <template>

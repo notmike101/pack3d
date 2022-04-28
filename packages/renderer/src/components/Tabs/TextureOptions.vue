@@ -2,17 +2,17 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const doBasis: Ref<boolean> = inject('doBasis');
-const resamplingFilter: Ref<string> = inject('resamplingFilter');
-const textureResolutionWidth: Ref<number> = inject('textureResolutionWidth');
-const textureResolutionHeight: Ref<number> = inject('textureResolutionHeight');
-const doResize: Ref<boolean> = inject('doResize');
-const basisMethod: Ref<string> = inject('basisMethod');
-const pngFormatFilter: Ref<string> = inject('pngFormatFilter');
-const etc1sQuality: Ref<number> = inject('etc1sQuality');
-const etc1sResizeNPOT: Ref<boolean> = inject('etc1sResizeNPOT');
-const uastcLevel: Ref<number> = inject('uastcLevel');
-const uastcResizeNPOT: Ref<boolean> = inject('uastcResizeNPOT');
+const doBasis: Ref<boolean> = inject('doBasis')!;
+const resamplingFilter: Ref<string> = inject('resamplingFilter')!;
+const textureResolutionWidth: Ref<number> = inject('textureResolutionWidth')!;
+const textureResolutionHeight: Ref<number> = inject('textureResolutionHeight')!;
+const doResize: Ref<boolean> = inject('doResize')!;
+const basisMethod: Ref<string> = inject('basisMethod')!;
+const pngFormatFilter: Ref<string> = inject('pngFormatFilter')!;
+const etc1sQuality: Ref<number> = inject('etc1sQuality')!;
+const etc1sResizeNPOT: Ref<boolean> = inject('etc1sResizeNPOT')!;
+const uastcLevel: Ref<number> = inject('uastcLevel')!;
+const uastcResizeNPOT: Ref<boolean> = inject('uastcResizeNPOT')!;
 
 function updateBasisMethod(method: string): void {
   if (doBasis.value === true) {

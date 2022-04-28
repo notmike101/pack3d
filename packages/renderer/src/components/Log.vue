@@ -2,15 +2,22 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const logs: Ref<[]> = inject('logs');
+const logs: Ref<[]> = inject('logs')!;
+
+function getLogTimestamp(log: string): string {
+  return log.split(' ')[0];
+}
+function getLogMessage(log: string): string {
+  return log.replace(getLogTimestamp(log), '').trim();
+}
 </script>
 
 <template>
   <footer class="log">
     <div class="log-content">
       <p v-for="log in logs">
-        <span style="font-weight: bold;">{{ log.split(' ')[0] }}</span>
-        <span>{{ log.replace(log.split(' ')[0], '') }}</span>
+        <span style="font-weight: bold;">{{ getLogTimestamp(log) }}</span>
+        <span>{{ getLogMessage(log) }}</span>
       </p>
     </div>
   </footer>
