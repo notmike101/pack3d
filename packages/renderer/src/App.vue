@@ -242,7 +242,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
         <fieldset v-if="activeTab === 'texture'">
           <legend>Texture Compression Options</legend>
           <div class="input-group">
-            <label for="doBasis">Enable Basis Universal</label>
+            <label for="doBasis">Enable Texture Compression</label>
             <input type="checkbox" id="doBasis" v-model="doBasis" />
           </div>
           <div class="input-group">
