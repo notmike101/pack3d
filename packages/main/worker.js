@@ -5,7 +5,7 @@
 
 const { parentPort } = require('worker_threads');
 const { NodeIO, FileUtils, ImageUtils, TextureChannel } = require('@gltf-transform/core');
-const { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask } = require('@gltf-transform/functions');
+const { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask, oxipng } = require('@gltf-transform/functions');
 const { DracoMeshCompression, TextureTransform, TextureBasisu } = require('@gltf-transform/extensions');
 const { MeshoptEncoder } = require('meshoptimizer');
 const draco3d = require('draco3dgltf');
@@ -14,51 +14,7 @@ const { spawn } = require('child_process');
 const tmp = require('tmp');
 const fs = require('fs/promises');
 const micromatch = require('micromatch');
-
-async function waitExit(process) {
-  let stdout = '';
-	if (process.stdout) {
-		for await (const chunk of process.stdout) {
-			stdout += chunk;
-		}
-	}
-	let stderr = '';
-	if (process.stderr) {
-		for await (const chunk of process.stderr) {
-			stderr += chunk;
-		}
-	}
-
-	const status = await new Promise((resolve, _) => {
-		process.on('close', resolve);
-	});
-	return [status, stdout, stderr];
-}
-
-const ktx2Path = process.cwd();
-
-const GLOBAL_DEFAULTS = {
-  filter: 'lanczos4',
-  filterScale: 1,
-  powerOfTwo: false,
-  slots: '*',
-  jobs: 2,
-};
-
-const Mode = {
-	ETC1S: 'etc1s',
-	UASTC: 'uastc',
-};
-
-const ETC1S_DEFAULTS = {
-	quality: 128,
-	compression: 1,
-	...GLOBAL_DEFAULTS,
-};
-
-const MICROMATCH_OPTIONS = { nocase: true, contains: true };
-
-const { R, G } = TextureChannel;
+const squoosh = require('@squoosh/lib');
 
 class Logger {
   static Verbosity = {
@@ -115,6 +71,62 @@ class Logger {
     }
   }
 }
+
+async function waitExit(process) {
+  let stdout = '';
+	if (process.stdout) {
+		for await (const chunk of process.stdout) {
+			stdout += chunk;
+		}
+	}
+	let stderr = '';
+	if (process.stderr) {
+		for await (const chunk of process.stderr) {
+			stderr += chunk;
+		}
+	}
+
+	const status = await new Promise((resolve, _) => {
+		process.on('close', resolve);
+	});
+	return [status, stdout, stderr];
+}
+
+const ktx2Path = process.cwd();
+
+const GLOBAL_DEFAULTS = {
+  filter: 'lanczos4',
+  filterScale: 1,
+  powerOfTwo: false,
+  slots: '*',
+  jobs: 2,
+};
+
+const Mode = {
+	ETC1S: 'etc1s',
+	UASTC: 'uastc',
+};
+
+const ETC1S_DEFAULTS = {
+	quality: 128,
+	compression: 1,
+	...GLOBAL_DEFAULTS,
+};
+
+const UASTC_DEFAULTS = {
+	level: 2,
+	rdo: 0,
+	rdoDictionarySize: 32768,
+	rdoBlockScale: 10.0,
+	rdoStdDev: 18.0,
+	rdoMultithreading: true,
+	zstd: 18,
+	...GLOBAL_DEFAULTS,
+};
+
+const MICROMATCH_OPTIONS = { nocase: true, contains: true };
+
+const { R, G } = TextureChannel;
 
 const io = new NodeIO()
   .registerExtensions([
@@ -206,13 +218,17 @@ function createParams(slots, channels, size, logger, numTextures, options) {
 
   params.push('--genmipmap');
 
-  // if (options.filter !== GLOBAL_DEFAULTS.filter) params.push('--filter', options.filter);
-  params.push('--filter', GLOBAL_DEFAULTS.filter);
+  if (options.filter === undefined) {
+    options.filter = GLOBAL_DEFAULTS.filter;
+  }
+  if (options.filter !== GLOBAL_DEFAULTS.filter) params.push('--filter', options.filter);
 
-  // if (options.filterScale !== GLOBAL_DEFAULTS.filterScale) {
-	// 	params.push('--fscale', options.filterScale);
-	// }
-  params.push('--fscale', GLOBAL_DEFAULTS.filterScale);
+  if (options.filterScale === undefined) {
+    options.filterScale = GLOBAL_DEFAULTS.filterScale;
+  }
+  if (options.filterScale !== GLOBAL_DEFAULTS.filterScale) {
+		params.push('--fscale', options.filterScale);
+	}
 
 
   if (options.mode === Mode.UASTC) {
@@ -239,15 +255,19 @@ function createParams(slots, channels, size, logger, numTextures, options) {
 	} else {
     const _options = options;
 		params.push('--bcmp');
-		// if (_options.quality !== ETC1S_DEFAULTS.quality) {
-		// 	params.push('--qlevel', _options.quality);
-		// }
-    params.push('--qlevel', ETC1S_DEFAULTS.quality);
+    if (_options.quality === undefined) {
+      _options.quality = ETC1S_DEFAULTS.quality;
+    }
+		if (_options.quality !== ETC1S_DEFAULTS.quality) {
+			params.push('--qlevel', _options.quality);
+		}
 
-		// if (_options.compression !== ETC1S_DEFAULTS.compression) {
-		// 	params.push('--clevel', _options.compression);
-		// }
-    params.push('--clevel', ETC1S_DEFAULTS.compression);
+    if (_options.compression === undefined) {
+      _options.compression = ETC1S_DEFAULTS.compression;
+    }
+		if (_options.compression !== ETC1S_DEFAULTS.compression) {
+			params.push('--clevel', _options.compression);
+		}
 
 		if (_options.maxEndpoints) params.push('--max_endpoints', _options.maxEndpoints);
 		if (_options.maxSelectors) params.push('--max_selectors', _options.maxSelectors);
@@ -343,87 +363,112 @@ function floorPowerOfTwo(value) {
 	return Math.pow(2, Math.floor(Math.log(value) / Math.LN2));
 }
 
+function ceilPowerOfTwo(value) {
+	return Math.pow(2, Math.ceil(Math.log(value) / Math.LN2));
+}
+
 async function doBasis(document, documentBinary, options, fileName, logger, appendString = '') {
   const startSize = documentBinary.byteLength;
 
   documentBinary = await io.writeBinary(document);
 
-  // Do stuff here...
-  const basisuExtension = document.createExtension(TextureBasisu).setRequired(true);
+  if (options.basisMethod === 'png') {
+    const formats = micromatch.makeRe(String(options.pngFormatFilter), MICROMATCH_OPTIONS);
+    const slots = micromatch.makeRe(String(options.slots), MICROMATCH_OPTIONS);
 
-  const textures = document.getRoot().listTextures();
-  let numCompressed = 0;
+    await document.transform(oxipng({ formats, squoosh }));
+  } else {
+    const basisuExtension = document.createExtension(TextureBasisu).setRequired(true);
 
-  const promises = textures.map(async (texture, textureIndex) => {
-    const slots = listTextureSlots(document, texture);
-    const channels = getTextureChannelMask(document, texture);
-    const textureLabel = texture.getURI() || texture.getName() || `${textureIndex + 1}/${doc.getRoot().listTextures().length}`;
-    const prefix = `toktx:texture(${textureLabel})`;
-    const textureMimeType = texture.getMimeType();
+    const textures = document.getRoot().listTextures();
+    let numCompressed = 0;
 
-    logger.debug(`${prefix}: Slots -> [${slots.join(', ')}]`);
+    const promises = textures.map(async (texture, textureIndex) => {
+      const slots = listTextureSlots(document, texture);
+      const channels = getTextureChannelMask(document, texture);
+      const textureLabel = texture.getURI() || texture.getName() || `${textureIndex + 1}/${doc.getRoot().listTextures().length}`;
+      const prefix = `toktx:texture(${textureLabel})`;
+      const textureMimeType = texture.getMimeType();
 
-    if (textureMimeType === 'image/ktx2') {
-      logger.debug(`${prefix}: Skipping KTX2 texture`);
+      logger.debug(`${prefix}: Slots -> [${slots.join(', ')}]`);
 
-      return;
-    } else if (!['image/png', 'image/jpeg'].includes(textureMimeType)) {
-      logger.warn(`${prefix}: Unsupported texture type: ${textureMimeType}`);
+      if (textureMimeType === 'image/ktx2') {
+        logger.debug(`${prefix}: Skipping KTX2 texture`);
 
-      return;
-    }
+        return;
+      } else if (!['image/png', 'image/jpeg'].includes(textureMimeType)) {
+        logger.warn(`${prefix}: Unsupported texture type: ${textureMimeType}`);
 
-    const image = texture.getImage();
-    const size = texture.getSize();
-
-    if (!image || !size) {
-      logger.warn(`${prefix}: Skipping, unreadable texture`);
-
-      return;
-    }
-
-    const extension = texture.getURI() ? FileUtils.extension(texture.getURI()) : ImageUtils.mimeTypeToExtension(textureMimeType);
-    const inPath = tmp.tmpNameSync({ postfix: '.' + extension });
-    const outPath = tmp.tmpNameSync({ postfix: '.ktx2' });
-    const inBytes = image.byteLength;
-
-    logger.debug('Writing file:', inPath);
-    await fs.writeFile(inPath, Buffer.from(image));
-    logger.debug('Done writing file:', inPath);
-
-    const params = [...createParams(slots, channels, size, logger, textures.length, options), outPath, inPath];
-
-    logger.debug(`${prefix}: Spawning -> ${ktx2Path}/toktx: ${params.join(' ')}`);
-
-    const [ status, stdout, stderr ] = await waitExit(spawn(ktx2Path + '/toktx', params));
-
-    if (status !== 0) {
-      logger.error(`${prefix}: Failed -> \n\n${stderr.toString()}`);
-    } else {
-      texture.setImage(await fs.readFile(outPath)).setMimeType('image/ktx2');
-
-      if (texture.getURI()) {
-        texture.setURI(FileUtils.basename(texture.getURI()) + '.ktx2');
+        return;
       }
 
-      numCompressed++;
+      const image = texture.getImage();
+      const size = texture.getSize();
+
+      if (!image || !size) {
+        logger.warn(`${prefix}: Skipping, unreadable texture`);
+
+        return;
+      }
+
+      const extension = texture.getURI() ? FileUtils.extension(texture.getURI()) : ImageUtils.mimeTypeToExtension(textureMimeType);
+      const inPath = tmp.tmpNameSync({ postfix: '.' + extension });
+      const outPath = tmp.tmpNameSync({ postfix: '.ktx2' });
+      const inBytes = image.byteLength;
+
+      await fs.writeFile(inPath, Buffer.from(image));
+
+      const passedOptions = {
+        filter: options.filter,
+        mode: options.basisMethod,
+      };
+
+      if (options.basisMethod === 'etc1s') {
+        passedOptions.quality = options.etc1sQuality;
+        passedOptions.powerOfTwo = options.etc1sResizeNPOT;
+      } else if (options.basisMethod === 'uastc') {
+        passedOptions.quality = options.uastcQuality;
+        passedOptions.powerOfTwo = options.uastcResizeNPOT;
+      }
+
+      const params = [
+        ...createParams(slots, channels, size, logger, textures.length, passedOptions),
+        outPath,
+        inPath
+      ];
+
+      logger.debug(`${prefix}: Spawning -> ${ktx2Path}/toktx: ${params.join(' ')}`);
+
+      const [ status, stdout, stderr ] = await waitExit(spawn(ktx2Path + '/toktx', params));
+
+      if (status !== 0) {
+        logger.error(`${prefix}: Failed -> \n\n${stderr.toString()}`);
+      } else {
+        texture.setImage(await fs.readFile(outPath)).setMimeType('image/ktx2');
+
+        if (texture.getURI()) {
+          texture.setURI(FileUtils.basename(texture.getURI()) + '.ktx2');
+        }
+
+        numCompressed++;
+      }
+
+      const outBytes = texture.getImage().byteLength;
+
+      logger.debug(`${prefix}: ${inBytes} -> ${outBytes} bytes`);
+    });
+
+    await Promise.all(promises);
+
+    if (numCompressed === 0) {
+      logger.warn('toktx: No textures were found, or none were selected for compression.');
     }
 
-    const outBytes = texture.getImage().byteLength;
+    const usesKTX2 = document.getRoot().listTextures().some((texture) => texture.getMimeType() === 'image/ktx2');
 
-    logger.debug(`${prefix}: ${inBytes} -> ${outBytes} bytes`);
-  });
-
-  await Promise.all(promises);
-
-  if (numCompressed === 0) {
-    logger.warn('toktx: No textures were found, or none were selected for compression.');
-  }
-
-  const usesKTX2 = document.getRoot().listTextures().some((texture) => texture.getMimeType() === 'image/ktx2');
-
-  if (!usesKTX2) {
-    basisuExtension.dispose();
+    if (!usesKTX2) {
+      basisuExtension.dispose();
+    }
   }
 
   documentBinary = await io.writeBinary(document);  
@@ -540,7 +585,6 @@ parentPort.on('message', async (data) => {
     doWeld: data.doWeld,
     doInstancing: data.doInstancing,
     doResize: data.doResize,
-    doBasis: data.doBasis,
     doDraco: data.doDraco,
     resamplingFilter: data.resamplingFilter,
     textureResolutionWidth: data.textureResolutionWidth,
@@ -552,6 +596,15 @@ parentPort.on('message', async (data) => {
     quantizationNormal: data.quantizationNormal,
     quantizationPosition: data.quantizationPosition,
     quantizationTexcoord: data.quantizationTexcoord,
+    encodeSpeed: data.encodeSpeed,
+    decodeSpeed: data.decodeSpeed,
+    doBasis: data.doBasis,
+    basisMethod: data.basisMethod,
+    pngFormatFilter: data.pngFormatFilter,
+    etc1sQuality: data.etc1sQuality,
+    etc1sResizeNPOT: data.etc1sResizeNPOT,
+    uastcLevel: data.uastcLevel,
+    uastcResizeNPOT: data.uastcResizeNPOT,
   });
 
   if (output instanceof Error) {

@@ -37,6 +37,7 @@
     "@gltf-transform/extensions": "^2.0.5",
     "@gltf-transform/functions": "^2.0.5",
     "@lottiefiles/vue-lottie-player": "^1.0.5",
+    "@squoosh/lib": "^0.4.0",
     "@types/draco3dgltf": "^1.4.0",
     "draco3dgltf": "^1.5.2",
     "meshoptimizer": "^0.17.0",
