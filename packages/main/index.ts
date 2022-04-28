@@ -33,8 +33,9 @@ async function createWindow(): Promise<void> {
       webSecurity: false,
     },
     resizable: true,
-    width: 1500,
-    height: 1000,
+    width: 1000,
+    height: 700,
+    frame: false,
   });
 
   mainWin.setMenu(null);
@@ -106,18 +107,10 @@ ipcMain.on('request-pack', async (event, data): Promise<void> => {
   worker.postMessage(data);
 });
 
-ipcMain.handle('dialog:openDirectory', async (): Promise<string> => {
-  let filePath = '';
+ipcMain.on('menu-close', (): void => {
+  mainWin?.close();
+});
 
-  if (mainWin) {
-    const { canceled, filePaths } = await dialog.showOpenDialog(mainWin, {
-      properties: ['openDirectory', 'dontAddToRecent'],
-    });
-
-    if (!canceled) {
-      filePath = filePaths[0] ?? '';
-    }
-  }
-
-  return filePath;
+ipcMain.on('menu-minimize', () => {
+  mainWin?.minimize();
 });
