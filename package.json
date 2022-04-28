@@ -1,8 +1,16 @@
 {
   "name": "pack3d",
+  "description": "Pack3D",
   "version": "1.0.0",
   "main": "dist/main/index.cjs",
-  "author": "Mike Orozco <mike.orozco@thermofisher.com>",
+  "author": "Mike Orozco <me@mikeorozco.dev>",
+  "homepage": "https://github.com/notmike101/pack3d",
+  "bugs": {
+    "url": "https://github.com/notmike101/pack3d/issues",
+    "email": "me@mikeorozco.dev"
+  },
+  "license": "MIT",
+  "repository": "github:notmike101/pack3d",
   "scripts": {
     "dev": "node scripts/watch.mjs",
     "prebuild": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
