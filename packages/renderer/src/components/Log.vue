@@ -8,7 +8,10 @@ const logs: Ref<[]> = inject('logs');
 <template>
   <footer class="log">
     <div class="log-content">
-      <p v-for="log in logs">{{ log }}</p>
+      <p v-for="log in logs">
+        <span style="font-weight: bold;">{{ log.split(' ')[0] }}</span>
+        <span>{{ log.replace(log.split(' ')[0], '') }}</span>
+      </p>
     </div>
   </footer>
 </template>
