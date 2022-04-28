@@ -5,9 +5,19 @@
  */
 -->
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import './styles.scss';
+
+import { ref, watch, provide } from 'vue'
 import BabylonScene from './components/BabylonScene.vue';
 import TitleBar from './components/TitleBar.vue';
+import DropFileInput from './components/DropFileInput.vue';
+import GeneralOptions from './components/Tabs/GeneralOptions.vue';
+import TextureOptions from './components/Tabs/TextureOptions.vue';
+import VertexCompressionOptions from './components/Tabs/VertexCompressionOptions.vue';
+import FileInfo from './components/FileInfo.vue';
+import Log from './components/Log.vue';
+import Tabs from './components/Tabs/Tabs.vue';
+import ErrorMessage from './components/ErrorMessage.vue';
 import { ipcRenderer } from 'electron';
 import path from 'path';
 
@@ -46,10 +56,10 @@ const quantizationPosition = ref<number>(14);
 const quantizationTexcoord = ref<number>(12);
 const basisMethod = ref<string>('png');
 const pngFormatFilter = ref<string>('all');
-const basisQuality = ref<number>(128);
+const etc1sQuality = ref<number>(128);
 const etc1sResizeNPOT = ref<boolean>(true);
 const uastcLevel = ref<number>(2);
-const usdtcResizeNPOT = ref<boolean>(true);
+const uastcResizeNPOT = ref<boolean>(true);
 const encodeSpeed = ref<number>(5);
 const decodeSpeed = ref<number>(5);
 const outputPath = ref<string>('');
@@ -60,14 +70,6 @@ const outputFileSize = ref<number>(0);
 const cameraPosition = ref<CameraPosition | null>(null);
 const logs = ref([] as string[]);
 let errorMessageTimeout: ReturnType<typeof setTimeout> | null = null;
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return bytes + ' Bytes';
-  if (bytes < 1048576) return (bytes / 1024).toFixed(3) + ' KB';
-  if (bytes < 1073741824) return (bytes / 1048576).toFixed(3) + ' MB';
-
-  return (bytes / 1073741824).toFixed(3) + ' GB';
-}
 
 function addLog(data: any): void {
   logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
@@ -99,7 +101,7 @@ function dragover(event: DragEvent): void {
   event.preventDefault();
 }
 
-function doPack() {
+function doPack(): void {
   ipcRenderer.send('request-pack', {
     file: inputFile.value?.path,
     doDedupe: doDedupe.value,
@@ -135,7 +137,6 @@ function updateCameraPosition(event: CameraPosition) {
 }
 
 function onPackSuccess(event: Event, data: any): void {
-  console.log(data);
   isProcessing.value = false;
   outputFile.value = data.file;
   outputFileSize.value = data.file.binary.byteLength;
@@ -174,13 +175,48 @@ function switchTab(tabIdentifier: string): void {
   activeTab.value = tabIdentifier;
 }
 
-function changeBasisMethod(method: string): void {
-  if (doBasis.value === true) {
-    basisMethod.value = method;
-  }
-}
-
 watch(errorMessage, errorWatcher);
+
+// Tabs
+provide('activeTab', activeTab);
+
+// Error message
+provide('errorMessage', errorMessage);
+
+// General
+provide('doDedupe', doDedupe);
+provide('doReorder', doReorder);
+provide('doWeld', doWeld);
+provide('doInstancing', doInstancing);
+
+// Texture
+provide('doBasis', doBasis);
+provide('resamplingFilter', resamplingFilter);
+provide('textureResolutionWidth', textureResolutionWidth);
+provide('textureResolutionHeight', textureResolutionHeight);
+provide('doResize', doResize);
+provide('basisMethod', basisMethod);
+provide('pngFormatFilter', pngFormatFilter);
+provide('etc1sQuality', etc1sQuality);
+provide('etc1sResizeNPOT', etc1sResizeNPOT);
+provide('uastcLevel', uastcLevel);
+provide('uastcResizeNPOT', uastcResizeNPOT);
+
+// Vertex
+provide('doDraco', doDraco);
+provide('vertexCompressionMethod', vertexCompressionMethod);
+provide('quantizationVolume', quantizationVolume);
+provide('quantizationColor', quantizationColor);
+provide('quantizationGeneric', quantizationGeneric);
+provide('quantizationNormal', quantizationNormal);
+provide('quantizationPosition', quantizationPosition);
+provide('quantizationTexcoord', quantizationTexcoord);
+provide('encodeSpeed', encodeSpeed);
+provide('decodeSpeed', decodeSpeed);
+
+// Logger
+provide('logs', logs);
+
 ipcRenderer.on('logging', onLoggingEvent);
 ipcRenderer.on('pack-success', onPackSuccess);
 ipcRenderer.on('pack-error', onPackError);
@@ -193,173 +229,11 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
     <div class="wrapper">
       <aside v-if="inputFile">
         <h1 class="file-name">Options</h1>
-        <div class="tabs">
-          <div class="tab" :class="{ active: activeTab === 'general' }" @click="switchTab('general')">General</div>
-          <div class="tab" :class="{ active: activeTab === 'texture' }" @click="switchTab('texture')">Texture</div>
-          <div class="tab" :class="{ active: activeTab === 'vertex' }" @click="switchTab('vertex')">Vertex</div>
-        </div>
+        <Tabs />
         <div class="top-options">
-          <fieldset v-if="activeTab === 'general'">
-            <legend>General Options</legend>
-            <div class="input-group">
-              <input type="checkbox" id="doDedupe" v-model="doDedupe" />
-              <label for="doDedupe">Dedupe</label>
-            </div>
-            <div class="input-group">
-              <input type="checkbox" id="doReorder" v-model="doReorder" />
-              <label for="doReorder">Reorder</label>
-            </div>
-            <div class="input-group">
-              <input type="checkbox" id="doWeld" v-model="doWeld" />
-              <label for="doWeld">Weld</label>
-            </div>
-            <div class="input-group">
-              <input type="checkbox" id="doInstancing" v-model="doInstancing" />
-              <label for="doInstancing">Instancing</label>
-            </div>
-          </fieldset>
-          <fieldset v-if="activeTab === 'texture'">
-            <legend>Texture Resize Options</legend>
-            <div class="input-group">
-              <label for="doResize">Enable Texture Resize</label>
-              <input type="checkbox" id="doResize" v-model="doResize" />
-            </div>
-            <div class="input-group">
-              <label for="resamplingFilter">Resampling Filter</label>
-              <select :disabled="doResize === false" id="resamplingFilter" v-model="resamplingFilter">
-                <option value="lanczos3">lanczos3</option>
-                <option value="lanczos2">lanczos2</option>
-              </select>
-            </div>
-            <div class="input-group">
-              <label for="textureResolution">Texture Resolution</label>
-              <div style="display: flex; flex-direction: row;align-items: center">
-                <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionWidth">
-                  <option :value="128">128</option>
-                  <option :value="256">256</option>
-                  <option :value="512">512</option>
-                  <option :value="1024">1024</option>
-                  <option :value="2048">2048</option>
-                  <option :value="4096">4096</option>
-                </select>
-                <span style="padding: 0 2px">x</span>
-                <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionHeight">
-                  <option :value="128">128</option>
-                  <option :value="256">256</option>
-                  <option :value="512">512</option>
-                  <option :value="1024">1024</option>
-                  <option :value="2048">2048</option>
-                  <option :value="4096">4096</option>
-                </select>
-              </div>
-            </div>
-          </fieldset>
-          <fieldset v-if="activeTab === 'texture'">
-            <legend>Texture Compression Options</legend>
-            <div class="input-group">
-              <label for="doBasis">Enable Texture Compression</label>
-              <input type="checkbox" id="doBasis" v-model="doBasis" />
-            </div>
-            <div class="input-group">
-              <label for="basisMethod">Method</label>
-              <div class="radio-select">
-                <div class="item" :class="{ active: basisMethod === 'png', disabled: doBasis === false }" @click="changeBasisMethod('png')">PNG</div>
-                <div class="item" :class="{ active: basisMethod === 'etc1s', disabled: doBasis === false }" @click="changeBasisMethod('etc1s')">ETC1S</div>
-                <div class="item" :class="{ active: basisMethod === 'uastc', disabled: doBasis === false }" @click="changeBasisMethod('uastc')">UASTC</div>
-              </div>
-            </div>
-            <template v-if="basisMethod === 'png'">
-              <div v-if="basisMethod === 'png'" class="input-group">
-                <label for="pngFormatFilter">Format Filter</label>
-                <select id="pngFormatFilter" :disabled="doBasis === false" v-model="pngFormatFilter">
-                  <option value="jpeg">jpeg</option>
-                  <option value="png">png</option>
-                  <option value="all">all</option>
-                </select>
-              </div>
-            </template>
-            <template v-if="basisMethod === 'etc1s'">
-              <div class="input-group">
-                <label for="basisQuality">Quality</label>
-                <input :disabled="doBasis === false" id="basisQuality" type="number" min="1" max="255" step="1" v-model="basisQuality" />
-              </div>
-              <div class="input-group">
-                <label for="etc1sResizeNPOT">Resize NPOT</label>
-                <input :disabled="doBasis === false" type="checkbox" id="etc1sResizeNPOT" v-model="etc1sResizeNPOT" />
-              </div>
-            </template>
-            <template v-if="basisMethod === 'uastc'">
-              <div class="input-group">
-                <label for="uastcLevel">Level</label>
-                <select :disabled="doBasis === false" v-model="uastcLevel" id="uastcLevel">
-                  <option value="0">Fastest</option>
-                  <option value="1">Faster</option>
-                  <option value="2">Default</option>
-                  <option value="3">Slow</option>
-                  <option value="4">Very Slow</option>
-                </select>
-              </div>
-              <div class="input-group">
-                <label for="usdtcResizeNPOT">Resize NPOT</label>
-                <input :disabled="doBasis === false" type="checkbox" id="usdtcResizeNPOT" v-model="usdtcResizeNPOT" />
-              </div>
-            </template>
-          </fieldset>
-          <fieldset v-if="activeTab === 'vertex'">
-            <legend>Vertex Compression Options</legend>
-            <div class="input-group">
-              <label for="doDraco">Enable Draco</label>
-              <input type="checkbox" id="doDraco" v-model="doDraco" />
-            </div>
-            <div class="input-group">
-              <label for="vertexCompressionMethod">Method</label>
-              <select :disabled="doDraco === false" id="vertexCompressionMethod" v-model="vertexCompressionMethod">
-                <option value="edgebreaker">edgebreaker</option>
-                <option value="sequential">sequential</option>
-              </select>
-            </div>
-            <fieldset>
-              <legend>Quantization</legend>
-              <div class="input-group">
-                <label for="quantizationVolume">Volume</label>
-                <select :disabled="doDraco === false" v-model="quantizationVolume" id="quantizationVolume">
-                  <option value="mesh">Mesh</option>
-                  <option value="scene">Scene</option>
-                </select>
-              </div>
-              <div class="input-group">
-                <label for="quantizationColor">Color Bits</label>
-                <input type="number" :disabled="doDraco === false" v-model="quantizationColor" id="quantizationColor">
-              </div>
-              <div class="input-group">
-                <label for="quantizationGeneric">Other Bits</label>
-                <input type="number" :disabled="doDraco === false" v-model="quantizationGeneric" id="quantizationGeneric">
-              </div>
-              <div class="input-group">
-                <label for="quantizationNormal">Normal Bits</label>
-                <input type="number" :disabled="doDraco === false" v-model="quantizationNormal" id="quantizationNormal">
-              </div>
-              <div class="input-group">
-                <label for="quantizationPosition">Position Bits</label>
-                <input type="number" :disabled="doDraco === false" v-model="quantizationPosition" id="quantizationPosition">
-              </div>
-              <div class="input-group">
-                <label for="quantizationTexcoord">Texcord Bits</label>
-                <input type="number" :disabled="doDraco === false" v-model="quantizationTexcoord" id="quantizationTexcoord">
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend>Speed</legend>
-              <div class="input-group">
-                <label for="encodeSpeed">Encode</label>
-                <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="encodeSpeed" id="encodeSpeed">
-              </div>
-              <div class="input-group">
-                <label for="decodeSpeed">Decode</label>
-                <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="decodeSpeed" id="decodeSpeed">
-              </div>
-            </fieldset>
-          </fieldset>
+          <GeneralOptions v-if="activeTab === 'general'" />
+          <TextureOptions v-if="activeTab === 'texture'" />
+          <VertexCompressionOptions v-if="activeTab === 'vertex'" />
         </div>
         <div class="bottom-options">
           <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
@@ -373,37 +247,25 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
           <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
             <div class="canvas-container">
               <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
-              <div class="canvas-container-info">
-                <p>File Name: {{ inputFile.name }}</p>
-                <p>File Size: {{ formatBytes(inputFileSize) }}</p>
-              </div>
+              <FileInfo :name="inputFile.name" :size="inputFileSize" />
             </div>
             <div v-if="outputFile" class="canvas-container">
               <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
-              <div class="canvas-container-info">
-                <p>File Name: {{ outputFile.name }}</p>
-                <p>File Size: {{ formatBytes(outputFileSize) }}</p>
-              </div>
+              <FileInfo :name="outputFile.name" :size="outputFileSize" />
             </div>
           </div>
-          <footer class="log">
-            <div class="log-content">
-              <p v-for="log in logs">{{ log }}</p>
-            </div>
-          </footer>
+          <Log />
         </div>
       </main>
-      <main v-if="!inputFile">
-        <p class="drop-notice">Drop File Into Window To Begin Editing</p>
-      </main>
-      <div v-if="errorMessage" class="error-message">
-        <p><span style="font-weight: bold">Error:</span> {{ errorMessage }}</p>
-      </div>
+      <DropFileInput v-if="!inputFile" />
+      <ErrorMessage />
     </div>
   </div>
 </template>
 
 <style lang="scss">
+$general-font-size: 12px;
+
 body {
   margin: 0;
   padding: 0;
@@ -443,84 +305,14 @@ $font-size: 12px;
   overflow: hidden;
   flex-wrap: wrap;
 
-  .log {
-    flex: 0 0 150px;
-    text-align: left;
-    background-color: #f0f0f0;
-    border-top: 1px solid black;
-    padding: 5px;
-    overflow: auto;
-    display: block;
-
-    p {
-      padding: 0;
-      margin: 0;
-      font-family: monospace;
-      font-size: $font-size;
-    }
-  }
-
-  .error-message {
-    position: absolute;
-    top: 5px;
-    left: 50%;
-    width: 95%;
-    background-color: rgb(255 84 84);
-    color: white;
-    text-align: center;
-    transform: translateX(-50%);
-    border-radius: 5px;
-
-    p {
-      text-align: center;
-      padding: 0;
-      margin: 5px 0;
-    }
-  }
-
   aside {
     flex: 0 0 250px;
     background-color: #ecf0f1;
-    border-right: 1px solid #bdc3c7;
     word-break: break-word;
     text-align: left;
     display: flex;
     flex-direction: column;
-
-    .tabs {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      
-      .tab {
-        display: flex;
-        border: 1px solid #cacaca;
-        flex: 1;
-        align-items: center;
-        justify-content: center;
-        color:rgb(170, 170, 170);
-        cursor: pointer;
-        font-size: $font-size;
-
-        &.active {
-          background-color: #2c3e50;
-          color: white;
-          border: 1px solid #2c3e50;
-          position: relative;
-
-          &:after {
-            position: absolute;
-            top: -3px;
-            background-color: #2c3e50;
-            content: ' ';
-            height: 2px;
-            width: calc(100% + 2px);
-            left: -1px;
-            border-radius: 5px 5px 0 0;
-          }
-        }
-      }
-    }
+    padding: 0 1px;
 
     h1 {
       margin: 0;
@@ -542,109 +334,6 @@ $font-size: 12px;
       display: flex;
       flex-direction: column;
       border-top: 1px solid black;
-    }
-
-    fieldset {
-      padding: 5px;
-      margin: 5px;
-      position: relative;
-      border-width: 1px;
-
-      &:first-of-type {
-        margin-top: 6px;
-      }
-
-      legend {
-        font-weight: bold;
-        font-size: $font-size;
-      }
-    }
-
-    .input-group {
-      display: flex;
-      padding: 1px 2px;
-      flex-direction: row;
-      align-items: center;
-      // width: calc(100% - 10px);
-
-      &.col {
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        width: 100%;
-      }
-
-      label {
-        display: inline-block;
-        cursor: pointer;
-        padding: 0;
-        flex: 2;
-        font-size: $font-size;
-      }
-
-      select {
-        padding: 1px;
-        margin: 0;
-        font-size: $font-size;
-      }
-
-      input {
-        font-size: $font-size;
-        &[type="checkbox"] {
-          cursor: pointer;
-        }
-
-        &[type="text"],
-        &[type="number"] {
-          width: calc(100% - 2px);
-          padding: 1px;
-          margin: 0;
-          flex: 1;
-
-          &:disabled {
-            color: rgb(170, 170, 170);
-          }
-        }
-      }
-
-      .radio-select {
-        $border-radius: 5px;
-
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        outline: 1px solid black;
-        border-radius: $border-radius;
-
-        .item {
-          padding: 1px 5px 0 5px;
-          cursor: pointer;
-
-          &:not(:last-of-type) {
-            border-right: 1px solid black;
-          }
-
-          &:first-of-type {
-            border-top-left-radius: $border-radius;
-            border-bottom-left-radius: $border-radius;
-          }
-
-          &:last-of-type {
-            border-top-right-radius: $border-radius;
-            border-bottom-right-radius: $border-radius;
-          }
-
-          &.active {
-            color: white;
-            background-color: #2c3e50;
-          }
-
-          &.disabled {
-            color: rgb(170, 170, 170);
-            cursor: default;
-          }
-        }
-      }
     }
 
     .do-pack-button {
@@ -671,12 +360,6 @@ $font-size: 12px;
     flex-direction: row;
     overflow: hidden;
 
-    .drop-notice {
-      margin: auto;
-      font-size: 2em;
-      font-weight: bold;
-    }
-
     .action-needed-notice {
       margin: auto;
       font-size: 1.5em;
@@ -692,28 +375,6 @@ $font-size: 12px;
       overflow: hidden;
       max-width: 100%;
       max-height: 100%;
-
-      .canvas-container-info {
-        position: absolute;
-        background-color: rgba(0, 0, 0, 0.7);
-        font-size: $font-size;
-        text-align: left;
-        padding: 5px;
-        color: white;
-
-        p {
-          margin: 0;
-          padding: 0;
-        }
-      }
-
-      .canvas-container-header {
-        border-bottom: 1px solid black;
-        margin: 0;
-        padding: 3px 0;
-        font-size: $font-size;
-        background-color: #ecf0f1;
-      }
 
       &:first-of-type {
         border-right: 1px solid #bdc3c7;
@@ -741,16 +402,6 @@ $font-size: 12px;
         outline: none;
         user-select: none;
         -webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
-      }
-
-      .file-info {
-        font-size: $font-size;
-        padding: 10px 0;
-
-        p {
-          margin: 0;
-          padding: 0;
-        }
       }
     }
   }
