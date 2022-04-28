@@ -101,6 +101,7 @@ ipcMain.on('request-pack', async (event, data): Promise<void> => {
       sender.send('pack-sizereport', result);
     } else if (result.type === 'packreport') {
       sender.send('pack-success', result);
+      worker.terminate();
     }
   });
 
