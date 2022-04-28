@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { inject } from 'vue';
+import type { Ref } from 'vue';
 
-const errorMessage = inject('errorMessage');
+const errorMessage: Ref<string> = inject('errorMessage');
 </script>
 
 <template>

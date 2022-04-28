@@ -7,11 +7,11 @@
 <script setup lang="ts">
 import { ipcRenderer } from 'electron';
 
-function menuClose() {
+function menuClose(): void {
   ipcRenderer.send('menu-close');
 }
 
-function menuMinimize() {
+function menuMinimize(): void {
   ipcRenderer.send('menu-minimize');
 }
 </script>

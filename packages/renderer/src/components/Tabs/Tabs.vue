@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { inject } from 'vue';
+import type { Ref } from 'vue';
 
-const activeTab = inject('activeTab');
+const activeTab: Ref<string> = inject('activeTab');
 
 function switchTab(tabIdentifier: string): void {
   activeTab.value = tabIdentifier;

@@ -43,8 +43,8 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['cameraMove']);
 
-const canvas: Ref<HTMLCanvasElement | null> = ref(null);
-const isGrabbing: Ref<boolean> = ref(false);
+const canvas = ref<HTMLCanvasElement | null>(null);
+const isGrabbing = ref<boolean>(false);
 
 let engine: Engine | null = null;
 let scene: Scene | null = null;

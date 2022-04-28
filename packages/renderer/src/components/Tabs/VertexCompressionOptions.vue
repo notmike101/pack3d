@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { inject } from 'vue';
+import type { Ref } from 'vue';
 
-const doDraco = inject('doDraco');
-const vertexCompressionMethod = inject('vertexCompressionMethod');
-const quantizationVolume = inject('quantizationVolume');
-const quantizationColor = inject('quantizationColor');
-const quantizationGeneric = inject('quantizationGeneric');
-const quantizationNormal = inject('quantizationNormal');
-const quantizationPosition = inject('quantizationPosition');
-const quantizationTexcoord = inject('quantizationTexcoord');
-const encodeSpeed = inject('encodeSpeed');
-const decodeSpeed = inject('decodeSpeed');
+const doDraco: Ref<boolean> = inject('doDraco');
+const vertexCompressionMethod: Ref<string> = inject('vertexCompressionMethod');
+const quantizationVolume: Ref<string> = inject('quantizationVolume');
+const quantizationColor: Ref<number> = inject('quantizationColor');
+const quantizationGeneric: Ref<number> = inject('quantizationGeneric');
+const quantizationNormal: Ref<number> = inject('quantizationNormal');
+const quantizationPosition: Ref<number> = inject('quantizationPosition');
+const quantizationTexcoord: Ref<number> = inject('quantizationTexcoord');
+const encodeSpeed: Ref<number> = inject('encodeSpeed');
+const decodeSpeed: Ref<number> = inject('decodeSpeed');
 
 function updateVertexCompressionMethod(value: string): void {
   if (doDraco.value === true) {

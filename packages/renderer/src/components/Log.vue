@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ipcRenderer } from 'electron';
 import { inject } from 'vue';
+import type { Ref } from 'vue';
 
-const logs = inject('logs');
+const logs: Ref<[]> = inject('logs');
 </script>
 
 <template>
