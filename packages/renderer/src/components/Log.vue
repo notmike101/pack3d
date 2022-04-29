@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { inject, ref, watch } from 'vue';
 import type { Ref } from 'vue';
 
 const logs: Ref<[]> = inject('logs')!;
+const logString: Ref<string> = ref<string>('');
+
+watch(logs, () => {
+  logString.value = logs.value.join('\n');
+});
 
 function getLogTimestamp(log: string): string {
   return log.split(' ')[0];
 }
+
 function getLogMessage(log: string): string {
   return log.replace(getLogTimestamp(log), '').trim();
 }
@@ -14,12 +20,7 @@ function getLogMessage(log: string): string {
 
 <template>
   <footer class="log">
-    <div class="log-content">
-      <p v-for="log in logs">
-        <span style="font-weight: bold;">{{ getLogTimestamp(log) }}</span>
-        <span>{{ getLogMessage(log) }}</span>
-      </p>
-    </div>
+    <textarea>{{ logs.map((log: string) => log.trim()).join('\n') }}</textarea>
   </footer>
 </template>
 
@@ -31,9 +32,20 @@ $font-size: 12px;
   text-align: left;
   background-color: #f0f0f0;
   border-top: 1px solid black;
-  padding: 5px;
   overflow: auto;
   display: block;
+  max-height: 150px;
+
+  textarea {
+    display: block;
+    padding: 5px;
+    margin: 0;
+    outline: 0;
+    border: 0;
+    resize: none;
+    width: calc(100% - 10px);
+    height: calc(100% - 10px);
+  }
 
   p {
     padding: 0;
