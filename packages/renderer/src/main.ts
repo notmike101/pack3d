@@ -3,10 +3,10 @@
  * (C) Copyright Michael Orozco 2022
  */
 
-import { createApp } from 'vue'
-import App from './App.vue'
-import './samples/node-api'
+import { createApp } from 'vue';
+import App from './App.vue';
 
 createApp(App)
   .mount('#app')
-  .$nextTick(window.removeLoading)
+  .$nextTick(window.removeLoading);
+  
