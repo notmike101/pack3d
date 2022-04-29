@@ -65,8 +65,6 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', (): void => {
   mainWin = null;
 
-  console.log('window-all-closed');
-
   if (process.platform !== 'darwin') app.quit();
 })
 
