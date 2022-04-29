@@ -6,7 +6,7 @@
 const { parentPort } = require('worker_threads');
 const { NodeIO, FileUtils, ImageUtils, TextureChannel } = require('@gltf-transform/core');
 const { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask, oxipng } = require('@gltf-transform/functions');
-const { DracoMeshCompression, TextureTransform, TextureBasisu } = require('@gltf-transform/extensions');
+const { DracoMeshCompression, TextureTransform, TextureBasisu, LightsPunctual, ALL_EXTENSIONS } = require('@gltf-transform/extensions');
 const { MeshoptEncoder } = require('meshoptimizer');
 const draco3d = require('draco3dgltf');
 const path = require('path');
@@ -129,10 +129,13 @@ const MICROMATCH_OPTIONS = { nocase: true, contains: true };
 const { R, G } = TextureChannel;
 
 const io = new NodeIO()
+  .registerExtensions(ALL_EXTENSIONS)
+  /*
   .registerExtensions([
     DracoMeshCompression,
     TextureTransform,
   ]);
+  */
 
 function reportSize(action, startSize, endSize) {
   parentPort.postMessage({
@@ -378,6 +381,7 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
 
     await document.transform(oxipng({ formats, squoosh }));
   } else {
+    const lightExtension = document.createExtension(LightsPunctual).setRequired(true);
     const basisuExtension = document.createExtension(TextureBasisu).setRequired(true);
 
     const textures = document.getRoot().listTextures();
@@ -468,6 +472,7 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
 
     if (!usesKTX2) {
       basisuExtension.dispose();
+      lightExtension.dispose();
     }
   }
 
@@ -532,27 +537,27 @@ async function doPack(filePath, outputPath, options = {}) {
     }
 
     if (options.doInstancing === true) {
-      outFileName = await doInstancing(document, documentBinary, outFileName, '_instance');
+      outFileName = await doInstancing(document, documentBinary, outFileName);
     }
 
     if (options.doReorder === true) {
-      outFileName = await doReorder(document, documentBinary, outFileName, '_reorder');
+      outFileName = await doReorder(document, documentBinary, outFileName);
     }
 
     if (options.doWeld === true) {
-      outFileName = await doWeld(document, documentBinary, outFileName, '_weld');
+      outFileName = await doWeld(document, documentBinary, outFileName);
     }
 
     if (options.doResize === true) {
-      outFileName = await doResize(document, documentBinary, options, outFileName, '_resize');
+      outFileName = await doResize(document, documentBinary, options, outFileName);
     }
 
     if (options.doBasis === true) {
-      outFileName = await doBasis(document, documentBinary, options, outFileName, logger, '_ktx2');
+      outFileName = await doBasis(document, documentBinary, options, outFileName, logger);
     }
 
     if (options.doDraco === true) {
-      outFileName = await doDraco(document, documentBinary, options, outFileName, '_draco');
+      outFileName = await doDraco(document, documentBinary, options, outFileName);
     }
 
     outFileName += '_packed' + extension;

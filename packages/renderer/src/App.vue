@@ -256,8 +256,13 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
               <FileInfo :name="inputFile.name" :size="inputFileSize" />
             </div>
             <div v-if="outputFile" class="canvas-container">
-              <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
-              <FileInfo :name="outputFile.name" :size="outputFileSize" />
+              <template v-if="isProcessing === false">
+                <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
+                <FileInfo :name="outputFile.name" :size="outputFileSize" />
+              </template>
+              <template v-if="isProcessing === true">
+                <p style="margin: auto;display: flex;flex: 1;align-items: center;justify-content: center;">Processing...</p>
+              </template>
             </div>
           </div>
           <Log />

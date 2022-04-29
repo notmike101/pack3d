@@ -7,6 +7,7 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { release } from 'os';
 import { join as pathJoin } from 'path';
 import { Worker } from 'worker_threads';
+import { URL as NodeURL } from 'url';
 import packWorker from './worker.js?raw';
 
 if (release().startsWith('6.1')) app.disableHardwareAcceleration();

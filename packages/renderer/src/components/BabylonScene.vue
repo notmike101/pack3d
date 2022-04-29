@@ -15,12 +15,10 @@ import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import type { Ref } from 'vue';
 import type { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
-import type { SmartArray } from '@babylonjs/core/Misc/smartArray';
+import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
 
 interface CameraPosition {
   target: {
@@ -49,7 +47,8 @@ const isGrabbing = ref<boolean>(false);
 let engine: Engine | null = null;
 let scene: Scene | null = null;
 let camera: ArcRotateCamera | null = null;
-let loadedModel: any = null;
+let loadedModelPath: any = null;
+let loadedModel: AbstractMesh | null = null;
 let renderNextFrame: boolean = false;
 const resizeObserver = new ResizeObserver(resize);
 
@@ -85,12 +84,56 @@ function emitCameraPosition(): void {
 function pointerMoveEventHandler(): void {
   if (isGrabbing.value === true && camera !== null) {
     renderNextFrame = true;
+
     emitCameraPosition();
   }
 }
 
 function modelAddToSceneSuccess(): void {
+  loadedModel = scene?.rootNodes.find((node) => node.name === '__root__') as AbstractMesh ?? null;
+
+  if (props.cameraPosition !== null) {
+    updateCameraPosition(props.cameraPosition);
+  } else {
+    const { boundingBox, boundingSphere } = getBoundingInfo(loadedModel);
+
+    updateCameraPosition({
+      position: {
+        x: 0,
+        y: 0,
+        z: boundingSphere.radius * 2,
+      },
+      target: {
+        x: boundingBox.center.x,
+        y: boundingBox.center.y,
+        z: boundingBox.center.z,
+      },
+    });
+
+    emitCameraPosition();
+  }
+
   renderNextFrame = true;
+}
+
+function getBoundingInfo(mesh: AbstractMesh) {
+  const childMeshes = mesh.getChildMeshes();
+  const min = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
+  const max = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
+
+  childMeshes.forEach((childMesh) => {
+    const { boundingBox } = childMesh.getBoundingInfo();
+
+    min.minimizeInPlace(boundingBox.minimumWorld);
+    max.maximizeInPlace(boundingBox.maximumWorld);
+  });
+
+  const boundingInfo = new BoundingInfo(min, max);
+
+  return {
+    boundingBox: boundingInfo.boundingBox,
+    boundingSphere: boundingInfo.boundingSphere,
+  }
 }
 
 function createEnvironment() {
@@ -100,7 +143,11 @@ function createEnvironment() {
 
   engine = new Engine(canvas.value);
   scene = new Scene(engine);
-  scene.createDefaultEnvironment();
+  
+  (window as any).scene = scene;
+
+  scene.createDefaultLight();
+  scene.createDefaultSkybox();
 
   camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
 
@@ -108,16 +155,24 @@ function createEnvironment() {
 
   camera.allowUpsideDown = false;
   camera.minZ = 0.1;
-  camera.maxZ = 2000;
+  // camera.maxZ = 2000;
   camera.lowerRadiusLimit = 1;
   camera.fov = 0.767945;
   camera.inertia = 0,
   camera.panningInertia = 0;
-  camera.angularSensibilityX = 350;
-  camera.angularSensibilityY = 350;
-  camera.panningSensibility = 350;
-  camera.wheelPrecision = 10;
-  camera.pinchPrecision = 500;
+  // camera.angularSensibilityX = 350;
+  // camera.angularSensibilityY = 350;
+  // camera.panningSensibility = 350;
+  // camera.wheelPrecision = 10;
+  // camera.pinchPrecision = 500;
+  // camera.useFramingBehavior = true;
+
+  // const framingBehavior = camera.getBehaviorByName("Framing") as FramingBehavior;
+
+  // if (framingBehavior) {
+  //   framingBehavior.framingTime = 0;
+  //   framingBehavior.elevationReturnTime = -1;
+  // }
 
   camera.attachControl(false);
 
@@ -127,9 +182,9 @@ function createEnvironment() {
 }
 
 function addModelToScene(model: string): void {
-  loadedModel = model;
+  loadedModelPath = model;
 
-  createEnvironment();
+  // createEnvironment();
 
   SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
     if (loader.name === 'gltf') {
@@ -182,10 +237,10 @@ function onUpdatedHandler(): void {
     updateCameraPosition(props.cameraPosition);
   }
 
-  if (props.model?.path !== loadedModel) {
-    scene!.meshes.forEach((mesh: AbstractMesh) => {
-      mesh.dispose();
-    });
+  if (props.model?.path !== loadedModelPath) {
+    for (const mesh of scene!.meshes) {
+      (mesh as AbstractMesh).dispose();
+    }
 
     addModelToScene(props.model.path);
   }
@@ -204,17 +259,9 @@ function onMountedHandler(): void {
 
     createEnvironment();
 
-    if (props.cameraPosition !== null) {
-      updateCameraPosition(props.cameraPosition);
-    } else {
-      emitCameraPosition();
-    }
-
     if (props.model) {
       addModelToScene(props.model.path);
     }
-
-    renderNextFrame = true;
   }
 }
 
