@@ -89,8 +89,8 @@ app.on('activate', (): void => {
 });
 
 ipcMain.on('request-pack', async (event, data): Promise<void> => {
-  const worker: Worker = new Worker('./workers/pack-worker/index.mjs');
   const { sender }: Electron.IpcMainEvent = event;
+  const worker = new Worker('./workers/pack-worker/index.mjs', { workerData: data });
 
   worker.on('message', (result: any): void => {
     if (result.type === 'logging') {
@@ -104,8 +104,6 @@ ipcMain.on('request-pack', async (event, data): Promise<void> => {
       worker.terminate();
     }
   });
-
-  worker.postMessage(data);
 });
 
 ipcMain.on('menu-close', (): void => {
