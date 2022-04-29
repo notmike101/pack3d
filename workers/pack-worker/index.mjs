@@ -1,4 +1,4 @@
-import { parentPort } from 'worker_threads';
+import { parentPort, workerData } from 'worker_threads';
 import { NodeIO, FileUtils, ImageUtils } from '@gltf-transform/core';
 import { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask, oxipng } from '@gltf-transform/functions';
 import { DracoMeshCompression, TextureBasisu, LightsPunctual, ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -13,9 +13,6 @@ import squoosh from '@squoosh/lib';
 import { Logger } from './Logger.mjs';
 import { waitExit, reportSize, createParams } from './utils.mjs';
 import { ktx2Path, MICROMATCH_OPTIONS } from './constants.mjs';
-
-const io = new NodeIO()
-  .registerExtensions(ALL_EXTENSIONS)
 
 async function doDedupe(document, documentBinary, fileName, appendString = '') {
   const startSize = documentBinary.byteLength;
@@ -298,51 +295,51 @@ async function doPack(filePath, outputPath, options = {}) {
   }
 }
 
-parentPort.on('message', async (data) => {
-  const startTime = performance.now();
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+const data = workerData;
+const startTime = performance.now();
 
-  const output = await doPack(data.file, data.outputPath, {
-    doDedupe: data.doDedupe,
-    doReorder: data.doReorder,
-    doWeld: data.doWeld,
-    doInstancing: data.doInstancing,
-    doResize: data.doResize,
-    doDraco: data.doDraco,
-    resamplingFilter: data.resamplingFilter,
-    textureResolutionWidth: data.textureResolutionWidth,
-    textureResolutionHeight: data.textureResolutionHeight,
-    vertexCompressionMethod: data.vertexCompressionMethod,
-    quantizationVolume: data.quantizationVolume,
-    quantizationColor: data.quantizationColor,
-    quantizationGeneric: data.quantizationGeneric,
-    quantizationNormal: data.quantizationNormal,
-    quantizationPosition: data.quantizationPosition,
-    quantizationTexcoord: data.quantizationTexcoord,
-    encodeSpeed: data.encodeSpeed,
-    decodeSpeed: data.decodeSpeed,
-    doBasis: data.doBasis,
-    basisMethod: data.basisMethod,
-    pngFormatFilter: data.pngFormatFilter,
-    etc1sQuality: data.etc1sQuality,
-    etc1sResizeNPOT: data.etc1sResizeNPOT,
-    uastcLevel: data.uastcLevel,
-    uastcResizeNPOT: data.uastcResizeNPOT,
-  });
-
-  if (output instanceof Error) {
-    parentPort.postMessage({
-      type: 'errorreport',
-      error: output,
-      errorMessage: output.message,
-      time: performance.now() - startTime,
-    });
-  } else {
-    parentPort.postMessage({
-      type: 'packreport',
-      file: output,
-      time: performance.now() - startTime,
-    });
-  }
-
-  process.exit(0);
+const output = await doPack(data.file, data.outputPath, {
+  doDedupe: data.doDedupe,
+  doReorder: data.doReorder,
+  doWeld: data.doWeld,
+  doInstancing: data.doInstancing,
+  doResize: data.doResize,
+  doDraco: data.doDraco,
+  resamplingFilter: data.resamplingFilter,
+  textureResolutionWidth: data.textureResolutionWidth,
+  textureResolutionHeight: data.textureResolutionHeight,
+  vertexCompressionMethod: data.vertexCompressionMethod,
+  quantizationVolume: data.quantizationVolume,
+  quantizationColor: data.quantizationColor,
+  quantizationGeneric: data.quantizationGeneric,
+  quantizationNormal: data.quantizationNormal,
+  quantizationPosition: data.quantizationPosition,
+  quantizationTexcoord: data.quantizationTexcoord,
+  encodeSpeed: data.encodeSpeed,
+  decodeSpeed: data.decodeSpeed,
+  doBasis: data.doBasis,
+  basisMethod: data.basisMethod,
+  pngFormatFilter: data.pngFormatFilter,
+  etc1sQuality: data.etc1sQuality,
+  etc1sResizeNPOT: data.etc1sResizeNPOT,
+  uastcLevel: data.uastcLevel,
+  uastcResizeNPOT: data.uastcResizeNPOT,
 });
+
+if (output instanceof Error) {
+  parentPort.postMessage({
+    type: 'errorreport',
+    error: output,
+    errorMessage: output.message,
+    time: performance.now() - startTime,
+  });
+} else {
+  parentPort.postMessage({
+    type: 'packreport',
+    file: output,
+    time: performance.now() - startTime,
+  });
+}
+
+process.exit(0);
