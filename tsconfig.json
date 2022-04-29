@@ -13,6 +13,7 @@
     "paths": {},
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "noImplicitAny": false,
     "lib": [
       "esnext",
       "dom",
