@@ -323,6 +323,7 @@ $font-size: 12px;
     display: flex;
     flex-direction: column;
     padding: 0 1px;
+    max-height: 100%;
 
     h1 {
       margin: 0;
@@ -369,6 +370,7 @@ $font-size: 12px;
     flex: 1;
     flex-direction: row;
     overflow: hidden;
+    max-height: 100%;
 
     .action-needed-notice {
       margin: auto;

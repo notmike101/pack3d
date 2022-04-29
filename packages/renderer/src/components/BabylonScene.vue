@@ -225,6 +225,8 @@ function resize(): void {
     const { parentElement } = canvas.value;
 
     if (parentElement) {
+      engine.setSize(0, 0);
+
       const { width, height } = parentElement.getBoundingClientRect();
 
       engine.setSize(width | 0, height | 0, true);
