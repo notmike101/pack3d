@@ -3,7 +3,7 @@
  * (C) Copyright Michael Orozco 2022
  */
 
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { release } from 'os';
 import path from 'path';
 import { Worker } from 'worker_threads';
