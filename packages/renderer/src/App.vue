@@ -177,10 +177,6 @@ function errorWatcher(): void {
   }
 }
 
-function switchTab(tabIdentifier: string): void {
-  activeTab.value = tabIdentifier;
-}
-
 watch(errorMessage, errorWatcher);
 
 // Tabs
