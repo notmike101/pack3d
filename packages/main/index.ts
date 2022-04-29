@@ -5,10 +5,8 @@
 
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { release } from 'os';
-import { join as pathJoin } from 'path';
+import path from 'path';
 import { Worker } from 'worker_threads';
-import { URL as NodeURL } from 'url';
-import packWorker from './worker.js?raw';
 
 if (release().startsWith('6.1')) app.disableHardwareAcceleration();
 
@@ -27,11 +25,12 @@ async function createWindow(): Promise<void> {
   mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
-      preload: pathJoin(__dirname, '../preload/index.cjs'),
+      preload: path.join(__dirname, '../preload/index.cjs'),
       nodeIntegration: true,
       contextIsolation: false,
       allowRunningInsecureContent: true,
       webSecurity: false,
+      nodeIntegrationInWorker: true,
     },
     resizable: true,
     width: 1000,
@@ -42,7 +41,7 @@ async function createWindow(): Promise<void> {
   mainWin.setMenu(null);
 
   if (app.isPackaged) {
-    mainWin.loadFile(pathJoin(__dirname, '../renderer/index.html'));
+    mainWin.loadFile(path.join(__dirname, '../renderer/index.html'));
   } else {
     const url: string = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
 
@@ -90,7 +89,7 @@ app.on('activate', (): void => {
 });
 
 ipcMain.on('request-pack', async (event, data): Promise<void> => {
-  const worker: Worker = new Worker(packWorker, { eval: true });
+  const worker: Worker = new Worker('./workers/pack-worker/index.mjs');
   const { sender }: Electron.IpcMainEvent = event;
 
   worker.on('message', (result: any): void => {
