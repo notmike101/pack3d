@@ -3,17 +3,24 @@ import { inject } from 'vue';
 import type { Ref } from 'vue';
 
 const activeTab: Ref<string> = inject('activeTab')!;
+const tabs = ['General', 'Texture', 'Vertex'];
 
 function switchTab(tabIdentifier: string): void {
-  activeTab.value = tabIdentifier;
+  activeTab.value = tabIdentifier.toLowerCase();
 }
 </script>
 
 <template>
   <div class="tabs">
-    <div class="tab" :class="{ active: activeTab === 'general' }" @click="switchTab('general')">General</div>
-    <div class="tab" :class="{ active: activeTab === 'texture' }" @click="switchTab('texture')">Texture</div>
-    <div class="tab" :class="{ active: activeTab === 'vertex' }" @click="switchTab('vertex')">Vertex</div>
+    <div
+      v-for="(tab, index) in tabs"
+      :key="index"
+      class="tab"
+      :class="{ active: activeTab === tab.toLowerCase() }"
+      @click="switchTab(tab)"
+    >
+      {{ tab }}
+    </div>
   </div>
 </template>
 
