@@ -10,7 +10,7 @@ import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Loading/loadingScreen';
 import '@babylonjs/core/Engines/Extensions/engine.views';
 
-import { onMounted, onUpdated, ref } from 'vue';
+import { onMounted, onUpdated, ref, inject, watch } from 'vue';
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
@@ -19,6 +19,7 @@ import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babyl
 import type { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
+import type { Ref } from 'vue';
 
 interface CameraPosition {
   target: {
@@ -35,7 +36,6 @@ interface CameraPosition {
 
 interface Props {
   model: File;
-  cameraPosition: CameraPosition | null;
 }
 
 const props = defineProps<Props>();
@@ -51,6 +51,8 @@ let loadedModelPath: any = null;
 let loadedModel: AbstractMesh | null = null;
 let renderNextFrame: boolean = false;
 const resizeObserver = new ResizeObserver(resize);
+
+const cameraPosition: Ref<CameraPosition | null> = inject('cameraPosition')!;
 
 function pointerUpEventHandler(): void {
   isGrabbing.value = false;
@@ -92,8 +94,8 @@ function pointerMoveEventHandler(): void {
 function modelAddToSceneSuccess(): void {
   loadedModel = scene?.rootNodes.find((node) => node.name === '__root__') as AbstractMesh ?? null;
 
-  if (props.cameraPosition !== null) {
-    updateCameraPosition(props.cameraPosition);
+  if (cameraPosition.value !== null) {
+    updateCameraPosition(cameraPosition.value);
   } else {
     const { boundingBox, boundingSphere } = getBoundingInfo(loadedModel);
 
@@ -233,10 +235,6 @@ function resize(): void {
 }
 
 function onUpdatedHandler(): void {
-  if (props.cameraPosition !== null) {
-    updateCameraPosition(props.cameraPosition);
-  }
-
   if (props.model?.path !== loadedModelPath) {
     for (const mesh of scene!.meshes) {
       (mesh as AbstractMesh).dispose();
@@ -265,8 +263,15 @@ function onMountedHandler(): void {
   }
 }
 
+function cameraPositionWatcher() {
+  if (cameraPosition.value !== null) {
+    updateCameraPosition(cameraPosition.value);
+  }
+}
+
 onUpdated(onUpdatedHandler);
 onMounted(onMountedHandler);
+watch(cameraPosition, cameraPositionWatcher);
 </script>
 
 <template>

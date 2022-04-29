@@ -223,6 +223,9 @@ provide('decodeSpeed', decodeSpeed);
 // Logger
 provide('logs', logs);
 
+// BabylonScene
+provide('cameraPosition', cameraPosition);
+
 ipcRenderer.on('logging', onLoggingEvent);
 ipcRenderer.on('pack-success', onPackSuccess);
 ipcRenderer.on('pack-error', onPackError);
@@ -252,12 +255,12 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
         <div style="display: flex; flex-direction: column;flex: 1;">
           <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
             <div class="canvas-container">
-              <BabylonScene :model="inputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" />
+              <BabylonScene :model="inputFile" @camera-move="updateCameraPosition" />
               <FileInfo :name="inputFile.name" :size="inputFileSize" />
             </div>
             <div v-if="outputFile" class="canvas-container">
               <template v-if="isProcessing === false">
-                <BabylonScene :model="outputFile" :camera-position="cameraPosition" @camera-move="updateCameraPosition" v-if="outputFile" />
+                <BabylonScene :model="outputFile" @camera-move="updateCameraPosition" v-if="outputFile" />
                 <FileInfo :name="outputFile.name" :size="outputFileSize" />
               </template>
               <template v-if="isProcessing === true">
