@@ -38,10 +38,6 @@
     "./ktx2ktx2.exe",
     "./ktxinfo.exe",
     "./ktxsc.exe",
-    "./toktx.exe",
-    "./workers/pack-worker/constants.mjs",
-    "./workers/pack-worker/index.mjs",
-    "./workers/pack-worker/Logger.mjs",
-    "./workers/pack-worker/utils.mjs"
+    "./toktx.exe"
   ]
 }

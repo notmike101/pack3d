@@ -10,6 +10,22 @@ import electron from 'electron';
 const query = new URLSearchParams(import.meta.url.split('?')[1]);
 const debug = query.has('debug');
 
+function watchWorker(server) {
+  return build({
+    configFile: 'packages/pack-worker/vite.config.ts',
+    mode: 'development',
+    plugins: [{
+      name: 'electron-preload-watcher',
+      writeBundle() {
+        server.ws.send({ type: 'full-reload' });
+      },
+    }],
+    build: {
+      watch: true,
+    },
+  });
+}
+
 function watchMain(server) {
   let electronProcess = null;
   const address = server.httpServer.address();
@@ -62,3 +78,4 @@ await mainServer.listen(3344);
 
 await watchPreload(mainServer)
 await watchMain(mainServer)
+await watchWorker(mainServer);

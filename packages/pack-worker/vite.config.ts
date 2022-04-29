@@ -1,11 +1,13 @@
-import { builtinModules } from 'module'
 import { defineConfig } from 'vite'
 import pkg from '../../package.json'
+import { builtinModules } from 'module'
+
 
 export default defineConfig({
+  mode: process.env.NODE_ENV,
   root: __dirname,
   build: {
-    outDir: '../../dist/main',
+    outDir: '../../dist/workers/pack-worker',
     lib: {
       entry: 'index.ts',
       formats: ['cjs'],
@@ -20,5 +22,9 @@ export default defineConfig({
         ...Object.keys(pkg.dependencies || {}),
       ],
     },
+  },
+  server: {
+    host: pkg.env.VITE_DEV_SERVER_HOST,
+    port: pkg.env.VITE_DEV_SERVER_PORT,
   },
 });

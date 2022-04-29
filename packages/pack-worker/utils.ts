@@ -1,6 +1,6 @@
 import { parentPort } from 'worker_threads';
 import micromatch from 'micromatch';
-
+import { GLOBAL_DEFAULTS, UASTC_DEFAULTS, ETC1S_DEFAULTS, Mode, MICROMATCH_OPTIONS, R, G } from './constants';
 
 export async function waitExit(process) {
   let stdout = '';
@@ -26,7 +26,7 @@ export async function waitExit(process) {
 }
 
 export function reportSize(action, startSize, endSize) {
-  parentPort.postMessage({
+  parentPort!.postMessage({
     type: 'sizereport',
     action,
     startSize,
@@ -67,7 +67,7 @@ export function ceilPowerOfTwo(value) {
 }
 
 export function createParams(slots, channels, size, logger, numTextures, options) {
-  const params = [];
+  const params: string[] = [];
 
   params.push('--genmipmap');
 
@@ -179,11 +179,11 @@ export function createParams(slots, channels, size, logger, numTextures, options
     params.push('--resize', `${width}x${height}`);
   }
 
-  if (options.jobs && options.jobs > 1 && numTextures > 1) {
-    // See: https://github.com/donmccurdy/glTF-Transform/pull/389#issuecomment-1089842185
-    const threads = Math.max(2, Math.min(NUM_CPUS, (3 * NUM_CPUS) / numTextures));
-    params.push('--threads', threads);
-  }
+  // if (options.jobs && options.jobs > 1 && numTextures > 1) {
+  //   // See: https://github.com/donmccurdy/glTF-Transform/pull/389#issuecomment-1089842185
+  //   const threads = Math.max(2, Math.min(NUM_CPUS, (3 * NUM_CPUS) / numTextures));
+  //   params.push('--threads', threads);
+  // }
 
   return params;
 }

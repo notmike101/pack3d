@@ -88,7 +88,7 @@ app.on('activate', (): void => {
 
 ipcMain.on('request-pack', async (event, data): Promise<void> => {
   const { sender }: Electron.IpcMainEvent = event;
-  const worker: Worker = new Worker('./workers/pack-worker/index.mjs', { workerData: data });
+  const worker: Worker = new Worker(path.join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
 
   worker.on('message', (result: any): void => {
     if (result.type === 'logging') {

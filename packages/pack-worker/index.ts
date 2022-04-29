@@ -10,9 +10,11 @@ import tmp from 'tmp';
 import fs from 'fs/promises';
 import micromatch from 'micromatch';
 import squoosh from '@squoosh/lib';
-import { Logger } from './Logger.mjs';
-import { waitExit, reportSize, createParams } from './utils.mjs';
-import { ktx2Path, MICROMATCH_OPTIONS } from './constants.mjs';
+import { Logger, Verbosity } from './Logger';
+import { waitExit, reportSize, createParams } from './utils';
+import { ktx2Path, MICROMATCH_OPTIONS } from './constants';
+
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
 
 async function doDedupe(document, documentBinary, fileName, appendString = '') {
   const startSize = documentBinary.byteLength;
@@ -33,7 +35,7 @@ async function doInstancing(document, documentBinary, fileName, appendString = '
   await document.transform(instance());
   documentBinary = await io.writeBinary(document);
 
-  const endSize = doumentBinary.byteLength;
+  const endSize = documentBinary.byteLength;
 
   reportSize('instance', startSize, endSize);
 
@@ -104,7 +106,7 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
     const promises = textures.map(async (texture, textureIndex) => {
       const slots = listTextureSlots(document, texture);
       const channels = getTextureChannelMask(document, texture);
-      const textureLabel = texture.getURI() || texture.getName() || `${textureIndex + 1}/${doc.getRoot().listTextures().length}`;
+      const textureLabel = texture.getURI() || texture.getName() || `${textureIndex + 1}/${document.getRoot().listTextures().length}`;
       const prefix = `toktx:texture(${textureLabel})`;
       const textureMimeType = texture.getMimeType();
 
@@ -139,6 +141,8 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
       const passedOptions = {
         filter: options.filter,
         mode: options.basisMethod,
+        quality: null,
+        powerOfTwo: null,
       };
 
       if (options.basisMethod === 'etc1s') {
@@ -157,10 +161,10 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
 
       logger.debug(`${prefix}: Spawning -> ${ktx2Path}/toktx: ${params.join(' ')}`);
 
-      const [ status, stdout, stderr ] = await waitExit(spawn(ktx2Path + '/toktx', params));
+      const [ status, stdout, stderr ]  = await waitExit(spawn(ktx2Path + '/toktx', params));
 
       if (status !== 0) {
-        logger.error(`${prefix}: Failed -> \n\n${stderr.toString()}`);
+        logger.error(`${prefix}: Failed -> \n\n${(stderr as any).toString()}`);
       } else {
         texture.setImage(await fs.readFile(outPath)).setMimeType('image/ktx2');
 
@@ -232,7 +236,7 @@ async function doDraco(document, documentBinary, options, fileName, appendString
   return fileName + appendString;
 }
 
-async function doPack(filePath, outputPath, options = {}) {  
+async function doPack(filePath, outputPath, options: { [key: string]: any } = {}) {  
   try {
     if (!filePath) throw new Error('No file path specified');
     if (!outputPath) throw new Error('No output path specified');
@@ -242,9 +246,9 @@ async function doPack(filePath, outputPath, options = {}) {
     let documentBinary = await io.writeBinary(document);
     const extension = filePathInfo.ext;
     let outFileName = filePathInfo.name;
-    const logger = new Logger(Logger.Verbosity.DEBUG);
+    const logger: Logger = new Logger(Verbosity.DEBUG);
 
-    document.setLogger(logger);
+    document.setLogger((logger as any));
 
     if (options.doDedupe === true) {
       outFileName = await doDedupe(document, documentBinary, outFileName);
@@ -295,51 +299,54 @@ async function doPack(filePath, outputPath, options = {}) {
   }
 }
 
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
-const data = workerData;
-const startTime = performance.now();
+async function main() {
+  const data = workerData;
+  const startTime = performance.now();
 
-const output = await doPack(data.file, data.outputPath, {
-  doDedupe: data.doDedupe,
-  doReorder: data.doReorder,
-  doWeld: data.doWeld,
-  doInstancing: data.doInstancing,
-  doResize: data.doResize,
-  doDraco: data.doDraco,
-  resamplingFilter: data.resamplingFilter,
-  textureResolutionWidth: data.textureResolutionWidth,
-  textureResolutionHeight: data.textureResolutionHeight,
-  vertexCompressionMethod: data.vertexCompressionMethod,
-  quantizationVolume: data.quantizationVolume,
-  quantizationColor: data.quantizationColor,
-  quantizationGeneric: data.quantizationGeneric,
-  quantizationNormal: data.quantizationNormal,
-  quantizationPosition: data.quantizationPosition,
-  quantizationTexcoord: data.quantizationTexcoord,
-  encodeSpeed: data.encodeSpeed,
-  decodeSpeed: data.decodeSpeed,
-  doBasis: data.doBasis,
-  basisMethod: data.basisMethod,
-  pngFormatFilter: data.pngFormatFilter,
-  etc1sQuality: data.etc1sQuality,
-  etc1sResizeNPOT: data.etc1sResizeNPOT,
-  uastcLevel: data.uastcLevel,
-  uastcResizeNPOT: data.uastcResizeNPOT,
-});
+  const output = await doPack(data.file, data.outputPath, {
+    doDedupe: data.doDedupe,
+    doReorder: data.doReorder,
+    doWeld: data.doWeld,
+    doInstancing: data.doInstancing,
+    doResize: data.doResize,
+    doDraco: data.doDraco,
+    resamplingFilter: data.resamplingFilter,
+    textureResolutionWidth: data.textureResolutionWidth,
+    textureResolutionHeight: data.textureResolutionHeight,
+    vertexCompressionMethod: data.vertexCompressionMethod,
+    quantizationVolume: data.quantizationVolume,
+    quantizationColor: data.quantizationColor,
+    quantizationGeneric: data.quantizationGeneric,
+    quantizationNormal: data.quantizationNormal,
+    quantizationPosition: data.quantizationPosition,
+    quantizationTexcoord: data.quantizationTexcoord,
+    encodeSpeed: data.encodeSpeed,
+    decodeSpeed: data.decodeSpeed,
+    doBasis: data.doBasis,
+    basisMethod: data.basisMethod,
+    pngFormatFilter: data.pngFormatFilter,
+    etc1sQuality: data.etc1sQuality,
+    etc1sResizeNPOT: data.etc1sResizeNPOT,
+    uastcLevel: data.uastcLevel,
+    uastcResizeNPOT: data.uastcResizeNPOT,
+  });
 
-if (output instanceof Error) {
-  parentPort.postMessage({
-    type: 'errorreport',
-    error: output,
-    errorMessage: output.message,
-    time: performance.now() - startTime,
-  });
-} else {
-  parentPort.postMessage({
-    type: 'packreport',
-    file: output,
-    time: performance.now() - startTime,
-  });
+  if (output instanceof Error) {
+    parentPort!.postMessage({
+      type: 'errorreport',
+      error: output,
+      errorMessage: output.message,
+      time: performance.now() - startTime,
+    });
+  } else {
+    parentPort!.postMessage({
+      type: 'packreport',
+      file: output,
+      time: performance.now() - startTime,
+    });
+  }
+
+  process.exit(0);
 }
 
-process.exit(0);
+main();
