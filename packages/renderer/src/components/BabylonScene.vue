@@ -1,25 +1,21 @@
-<!--
-/**
- * Licensed Materials - Property of Michael Orozco
- * (C) Copyright Michael Orozco 2022
- */
--->
 <script setup lang="ts">
 import '@babylonjs/loaders/gLTF';
 import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Loading/loadingScreen';
 import '@babylonjs/core/Engines/Extensions/engine.views';
 
-import { onMounted, onUpdated, ref, inject, watch } from 'vue';
+import { onMounted, onUpdated, ref, inject, watch, onUnmounted, EmitsOptions } from 'vue';
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import type { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
 import type { Ref } from 'vue';
+import { AssetContainer } from '@babylonjs/core/assetContainer';
+import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 
 interface CameraPosition {
   target: {
@@ -38,35 +34,67 @@ interface Props {
   model: File;
 }
 
-const props = defineProps<Props>();
+const props: Props = defineProps<Props>();
 const emit = defineEmits(['cameraMove']);
 
-const canvas = ref<HTMLCanvasElement | null>(null);
-const isGrabbing = ref<boolean>(false);
+const canvas: Ref<HTMLCanvasElement | null> = ref<HTMLCanvasElement | null>(null);
+const cameraPosition: Ref<CameraPosition | null> = inject('cameraPosition')!;
 
 let engine: Engine | null = null;
 let scene: Scene | null = null;
 let camera: ArcRotateCamera | null = null;
 let loadedModelPath: any = null;
-let loadedModel: AbstractMesh | null = null;
-let renderNextFrame: boolean = false;
-const resizeObserver = new ResizeObserver(resize);
+let renderNextFrame: number = 0;
+let activeEntity: AssetContainer | null = null;
+let savedCameraPosition: CameraPosition | null = null;
+const resizeObserver: ResizeObserver = new ResizeObserver(resize);
 
-const cameraPosition: Ref<CameraPosition | null> = inject('cameraPosition')!;
+GLTFFileLoader.IncrementalLoading = false;
+
+SceneLoader.OnPluginActivatedObservable.add((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
+  if (loader.name === 'gltf') {
+    (loader as GLTFFileLoader).animationStartMode = 0;
+  }
+});
 
 function pointerUpEventHandler(): void {
-  isGrabbing.value = false;
+  if (canvas.value) {
+    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
+  }
+
+  if (!camera!.position.equals(savedCameraPosition!.position as Vector3) || !camera!.target.equals(savedCameraPosition!.target as Vector3)) {
+    emitCameraPosition();
+  }
+}
+
+function pointerDownEventHandler(): void {  
+  if (canvas.value) {
+    canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
+  }
+
+  savedCameraPosition = {
+    position: camera!.position,
+    target: camera!.target,
+  };
+
+  renderNextFrame += 1;
+}
+
+function pointerMoveEventHandler(): void {
+  renderNextFrame += 1;
 
   emitCameraPosition();
 }
 
-function pointerDownEventHandler(): void {
-  isGrabbing.value = true;
+function wheelEventHandler(): void {
+  renderNextFrame += 1;
+
+  emitCameraPosition();
 }
 
 function emitCameraPosition(): void {
   if (camera !== null) {
-    const cameraPosition: CameraPosition = {
+    const newCameraPosition: CameraPosition = {
       position: {
         x: camera?.position.x,
         y: camera?.position.y,
@@ -79,74 +107,32 @@ function emitCameraPosition(): void {
       },
     };
 
-    emit('cameraMove', cameraPosition);
+    emit('cameraMove', newCameraPosition);
   }
 }
 
-function pointerMoveEventHandler(): void {
-  if (isGrabbing.value === true && camera !== null) {
-    renderNextFrame = true;
+function getBoundingInfo(mesh: AbstractMesh | Mesh): BoundingInfo {
+  const childMeshes: AbstractMesh[] = mesh.getChildMeshes();
+  const min: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
+  const max: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
 
-    emitCameraPosition();
-  }
-}
-
-function modelAddToSceneSuccess(): void {
-  loadedModel = scene?.rootNodes.find((node) => node.name === '__root__') as AbstractMesh ?? null;
-
-  if (cameraPosition.value !== null) {
-    updateCameraPosition(cameraPosition.value);
-  } else {
-    const { boundingBox, boundingSphere } = getBoundingInfo(loadedModel);
-
-    updateCameraPosition({
-      position: {
-        x: 0,
-        y: 0,
-        z: boundingSphere.radius * 2,
-      },
-      target: {
-        x: boundingBox.center.x,
-        y: boundingBox.center.y,
-        z: boundingBox.center.z,
-      },
-    });
-
-    emitCameraPosition();
-  }
-
-  renderNextFrame = true;
-}
-
-function getBoundingInfo(mesh: AbstractMesh) {
-  const childMeshes = mesh.getChildMeshes();
-  const min = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
-  const max = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
-
-  childMeshes.forEach((childMesh) => {
-    const { boundingBox } = childMesh.getBoundingInfo();
+  childMeshes.forEach((childMesh: AbstractMesh) => {
+    const { boundingBox }: BoundingInfo = childMesh.getBoundingInfo();
 
     min.minimizeInPlace(boundingBox.minimumWorld);
     max.maximizeInPlace(boundingBox.maximumWorld);
   });
 
-  const boundingInfo = new BoundingInfo(min, max);
-
-  return {
-    boundingBox: boundingInfo.boundingBox,
-    boundingSphere: boundingInfo.boundingSphere,
-  }
+  return new BoundingInfo(min, max);
 }
 
-function createEnvironment() {
+function createEnvironment(): void {
   if (engine) {
     engine.dispose();
   }
 
   engine = new Engine(canvas.value);
   scene = new Scene(engine);
-  
-  (window as any).scene = scene;
 
   scene.createDefaultLight();
   scene.createDefaultSkybox();
@@ -157,100 +143,118 @@ function createEnvironment() {
 
   camera.allowUpsideDown = false;
   camera.minZ = 0.1;
-  // camera.maxZ = 2000;
   camera.lowerRadiusLimit = 1;
   camera.fov = 0.767945;
   camera.inertia = 0,
   camera.panningInertia = 0;
-  // camera.angularSensibilityX = 350;
-  // camera.angularSensibilityY = 350;
-  // camera.panningSensibility = 350;
-  // camera.wheelPrecision = 10;
-  // camera.pinchPrecision = 500;
-  // camera.useFramingBehavior = true;
-
-  // const framingBehavior = camera.getBehaviorByName("Framing") as FramingBehavior;
-
-  // if (framingBehavior) {
-  //   framingBehavior.framingTime = 0;
-  //   framingBehavior.elevationReturnTime = -1;
-  // }
 
   camera.attachControl(false);
 
   engine.runRenderLoop(engineRenderLoop);
 
-  renderNextFrame = true;
+  renderNextFrame += 1;
 }
 
-function addModelToScene(model: string): void {
-  loadedModelPath = model;
+function fitCameraToFrame(): void {
+  if (activeEntity === null) return;
+  if (!camera) return;
 
-  // createEnvironment();
+  const { boundingBox, boundingSphere }: BoundingInfo = getBoundingInfo(activeEntity.createRootMesh());
 
-  SceneLoader.OnPluginActivatedObservable.addOnce((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
-    if (loader.name === 'gltf') {
-      (loader as GLTFFileLoader).animationStartMode = 0;
+  const newCameraPosition: CameraPosition = {
+    position: {
+      x: boundingBox.centerWorld.x,
+      y: boundingBox.centerWorld.y,
+      z: boundingSphere.radiusWorld * 2,
+    },
+    target: {
+      x: boundingBox.centerWorld.x,
+      y: boundingBox.centerWorld.y,
+      z: boundingBox.centerWorld.z,
+    },
+  };
+
+  setCameraPosition(newCameraPosition);
+
+  emitCameraPosition();
+
+  renderNextFrame += 1;
+}
+
+function addModelToScene(modelPath: string): Promise<void> {
+  return new Promise(async (resolve): Promise<void> => {
+    if (activeEntity !== null) {
+      activeEntity.removeAllFromScene();
     }
+
+    const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
+
+    activeEntity = assetContainer;
+    loadedModelPath = modelPath;
+
+    assetContainer.addAllToScene();
+
+    renderNextFrame += 1;
+
+    setTimeout((): void => {
+      renderNextFrame += 1;
+
+      resolve();
+    }, 250);
   });
-
-  SceneLoader.Append(model, undefined, undefined, modelAddToSceneSuccess);
-
-  renderNextFrame = true;
 }
 
 function engineRenderLoop(): void {
-  if (scene && renderNextFrame === true) {
-    renderNextFrame = false;
+  if (scene && renderNextFrame > 0) {
+    renderNextFrame = 0;
 
     scene.render();
   }
 }
 
-function updateCameraPosition(cameraPosition: CameraPosition) {
+function setCameraPosition(newCameraPosition: CameraPosition): void {
   if (camera !== null) {
-    camera.position = new Vector3(cameraPosition.position.x, cameraPosition.position.y, cameraPosition.position.z);
-    camera.target = new Vector3(cameraPosition.target.x, cameraPosition.target.y, cameraPosition.target.z);
-    
-    renderNextFrame = true;
-  }
-}
+    camera.position = new Vector3(newCameraPosition.position.x, newCameraPosition.position.y, newCameraPosition.position.z);
+    camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
 
-function wheelEventHandler(): void {
-  renderNextFrame = true;
+    renderNextFrame += 1;
+  }
 }
 
 function resize(): void {
   if (engine && canvas.value) {
-    const { parentElement } = canvas.value;
+    const { parentElement }: HTMLElement = canvas.value;
 
     if (parentElement) {
       engine.setSize(0, 0);
 
-      const { width, height } = parentElement.getBoundingClientRect();
+      const { width, height }: DOMRect = parentElement.getBoundingClientRect();
 
       engine.setSize(width | 0, height | 0, true);
 
-      renderNextFrame = true;
+      renderNextFrame += 1;
     }
   }
 }
 
-function onUpdatedHandler(): void {
+async function onUpdatedHandler(): Promise<void> {
   if (props.model?.path !== loadedModelPath) {
-    for (const mesh of scene!.meshes) {
-      (mesh as AbstractMesh).dispose();
-    }
+    const replacingExistingModel: boolean = activeEntity !== null;
 
-    addModelToScene(props.model.path);
+    await addModelToScene(props.model.path);
+
+    if (replacingExistingModel || cameraPosition.value === null) {
+      fitCameraToFrame();
+    } else if(cameraPosition.value !== null) {
+      setCameraPosition(cameraPosition.value);
+    }
   }
 }
 
-function onMountedHandler(): void {
+async function onMountedHandler(): Promise<void> {
   if (canvas.value) {  
     canvas.value.addEventListener('pointerup', pointerUpEventHandler);
     canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
-    canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
     canvas.value.addEventListener('wheel', wheelEventHandler);
 
     if (canvas.value.parentElement) {
@@ -260,19 +264,43 @@ function onMountedHandler(): void {
     createEnvironment();
 
     if (props.model) {
-      addModelToScene(props.model.path);
+      await addModelToScene(props.model.path);
+    }
+
+    if (cameraPosition.value === null) {
+      fitCameraToFrame();
+    } else {
+      setCameraPosition(cameraPosition.value);
     }
   }
 }
 
-function cameraPositionWatcher() {
+function cameraPositionWatcher(): void {
   if (cameraPosition.value !== null) {
-    updateCameraPosition(cameraPosition.value);
+    setCameraPosition(cameraPosition.value);
+  }
+}
+
+function onUnmountedHandler(): void {
+  if (canvas.value) {
+    canvas.value.removeEventListener('pointerup', pointerUpEventHandler);
+    canvas.value.removeEventListener('pointerdown', pointerDownEventHandler);
+    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
+    canvas.value.removeEventListener('wheel', wheelEventHandler);
+
+    if (canvas.value.parentElement) {
+      resizeObserver.unobserve(canvas.value.parentElement);
+    }
+
+    if (engine) {
+      engine.dispose();
+    }
   }
 }
 
 onUpdated(onUpdatedHandler);
 onMounted(onMountedHandler);
+onUnmounted(onUnmountedHandler);
 watch(cameraPosition, cameraPositionWatcher);
 </script>
 
