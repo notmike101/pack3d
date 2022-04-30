@@ -8,9 +8,13 @@ import { release } from 'os';
 import path from 'path';
 import { Worker } from 'worker_threads';
 
-if (release().startsWith('6.1')) app.disableHardwareAcceleration();
+if (release().startsWith('6.1')) {
+  app.disableHardwareAcceleration();
+}
 
-if (process.platform === 'win32') app.setAppUserModelId(app.getName());
+if (process.platform === 'win32') {
+  app.setAppUserModelId(app.getName());
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -55,7 +59,9 @@ async function createWindow(): Promise<void> {
   });
 
   mainWin.webContents.setWindowOpenHandler(({ url }: Electron.HandlerDetails) => {
-    if (url.startsWith('https:')) shell.openExternal(url);
+    if (url.startsWith('https:')) {
+      shell.openExternal(url);
+    }
 
     return { action: 'deny' };
   })
@@ -66,12 +72,16 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', (): void => {
   mainWin = null;
 
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 })
 
 app.on('second-instance', (): void => {
   if (mainWin) {
-    if (mainWin.isMinimized()) mainWin.restore();
+    if (mainWin.isMinimized()) {
+      mainWin.restore();
+    }
 
     mainWin.focus();
   }
@@ -109,6 +119,6 @@ ipcMain.on('menu-close', (): void => {
   mainWin?.close();
 });
 
-ipcMain.on('menu-minimize', () => {
+ipcMain.on('menu-minimize', (): void => {
   mainWin?.minimize();
 });

@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import pkg from '../../package.json'
 import { builtinModules } from 'module'
 
-
 export default defineConfig({
   mode: process.env.NODE_ENV,
   root: __dirname,

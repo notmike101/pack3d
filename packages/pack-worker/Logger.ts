@@ -19,7 +19,7 @@ export class Logger {
     this.verbosity = verbosity;
   }
 
-  debug(text) {
+  debug(text): void {
     if (this.verbosity <= Logger.Verbosity.DEBUG) {
       parentPort!.postMessage({
         type: 'logging',
@@ -29,7 +29,7 @@ export class Logger {
     }
   }
 
-  info(text) {
+  info(text): void {
     if (this.verbosity <= Logger.Verbosity.INFO) {
       parentPort!.postMessage({
         type: 'logging',
@@ -39,7 +39,7 @@ export class Logger {
     }
   }
 
-  warn(text) {
+  warn(text): void {
     if (this.verbosity <= Logger.Verbosity.WARN) {
       parentPort!.postMessage({
         type: 'logging',
@@ -49,7 +49,7 @@ export class Logger {
     }
   }
 
-  error(text) {
+  error(text): void {
     if (this.verbosity <= Logger.Verbosity.ERROR) {
       parentPort!.postMessage({
         type: 'logging',
