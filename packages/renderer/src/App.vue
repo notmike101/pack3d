@@ -1,9 +1,3 @@
-<!--
-/**
- * Licensed Materials - Property of Michael Orozco
- * (C) Copyright Michael Orozco 2022
- */
--->
 <script setup lang="ts">
 import './styles.scss';
 
@@ -141,7 +135,7 @@ function doPack(): void {
   addLog('Requesting pack for ' + inputFile.value?.path);
 }
 
-function updateCameraPosition(event: CameraPosition) {
+function updateCameraPosition(event: CameraPosition): void {
   console.log('app.updateCameraPosition', event);
   cameraPosition.value = event;
 }
