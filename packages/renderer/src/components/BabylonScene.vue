@@ -17,6 +17,7 @@ import { AssetContainer } from '@babylonjs/core/assetContainer';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
+import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
 
 interface CameraPosition {
   target: {
@@ -64,6 +65,17 @@ DracoCompression.Configuration = {
     wasmBinaryUrl: new URL('../../public/wasm/draco/draco_decoder_gltf.wasm', import.meta.url).href,
     fallbackUrl: new URL('../../public/wasm/draco/draco_wasm_wrapper_gltf.js', import.meta.url).href,
   },
+};
+
+KhronosTextureContainer2.URLConfig = {
+  jsDecoderModule: new URL('../../public/wasm/ktx2/ktx2Decoder.js', import.meta.url).href,
+  jsMSCTranscoder: new URL('../../public/wasm/basis/msc_basis_transcoder.js', import.meta.url).href,
+  wasmMSCTranscoder: new URL('../../public/wasm/basis/msc_basis_transcoder.wasm', import.meta.url).href,
+  wasmUASTCToASTC: null,
+  wasmUASTCToBC7: new URL('../../public/wasm/ktx2/uastc_bc7.wasm', import.meta.url).href,
+  wasmUASTCToRGBA_SRGB: new URL('../../public/wasm/ktx2/uastc_rgba_srgb.wasm', import.meta.url).href,
+  wasmUASTCToRGBA_UNORM: new URL('../../public/wasm/ktx2/uastc_rgba32_unorm.wasm', import.meta.url).href,
+  wasmZSTDDecoder: null,
 };
 
 function pointerUpEventHandler(): void {
