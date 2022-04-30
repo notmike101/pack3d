@@ -1,12 +1,7 @@
-/**
- * Licensed Materials - Property of Michael Orozco
- * (C) Copyright Michael Orozco 2022
- */
-
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { release } from 'os';
-import path from 'path';
 import { Worker } from 'worker_threads';
+import path from 'path';
 
 if (release().startsWith('6.1')) {
   app.disableHardwareAcceleration();

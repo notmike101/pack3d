@@ -10,14 +10,14 @@ import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
-import type { Ref } from 'vue';
 import { AssetContainer } from '@babylonjs/core/assetContainer';
-import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import type { Ref } from 'vue';
+import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 interface CameraPosition {
   target: {
