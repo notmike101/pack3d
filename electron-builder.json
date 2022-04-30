@@ -18,19 +18,27 @@
   "win": {
     "target": [
       {
+        "target": "msi",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
         "target": "nsis",
         "arch": [
           "x64"
         ]
       }
     ],
+    "icon": "./logo.ico",
     "artifactName": "${productName}_${version}.${ext}"
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
+    "deleteAppDataOnUninstall": false,
+    "installerIcon": "./logo.ico"
   },
   "extraFiles": [
     "./ktx.dll",

@@ -39,3 +39,4 @@ jobs:
           files: |
             LICENSE.txt
             release/*/*.exe
+            release/*/*.msi

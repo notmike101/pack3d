@@ -13,7 +13,7 @@ function menuMinimize(): void {
 <template>
   <header class="titlebar">
     <div class="info">
-      <span>Icon</span>
+      <span class="icon"></span>
     </div>
     <div class="title">
       <span>Pack3D - Mike Orozco (notmike101)</span>
@@ -46,6 +46,15 @@ function menuMinimize(): void {
     align-items: center;
     justify-content: flex-start;
     padding-left: 5px;
+
+    .icon {
+      background-image: url('../assets/logo.svg');
+      background-repeat: no-repeat;
+      background-position: center;
+      display: block;
+      height: 100%;
+      width: 18px;
+    }
   }
 
   .title {
