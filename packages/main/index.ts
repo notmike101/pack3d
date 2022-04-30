@@ -27,7 +27,6 @@ async function createWindow(): Promise<void> {
       preload: path.join(__dirname, '../preload/index.cjs'),
       nodeIntegration: true,
       contextIsolation: false,
-      allowRunningInsecureContent: true,
       webSecurity: false,
       nodeIntegrationInWorker: true,
       devTools: !app.isPackaged,
