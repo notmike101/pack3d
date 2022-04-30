@@ -31,6 +31,7 @@ async function createWindow(): Promise<void> {
       allowRunningInsecureContent: true,
       webSecurity: false,
       nodeIntegrationInWorker: true,
+      devTools: !app.isPackaged,
     },
     resizable: true,
     width: 1000,
