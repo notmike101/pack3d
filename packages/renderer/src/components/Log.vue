@@ -8,14 +8,6 @@ const logString: Ref<string> = ref<string>('');
 watch(logs, () => {
   logString.value = logs.value.join('\n');
 });
-
-function getLogTimestamp(log: string): string {
-  return log.split(' ')[0];
-}
-
-function getLogMessage(log: string): string {
-  return log.replace(getLogTimestamp(log), '').trim();
-}
 </script>
 
 <template>
