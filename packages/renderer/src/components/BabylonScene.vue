@@ -16,6 +16,7 @@ import type { Ref } from 'vue';
 import { AssetContainer } from '@babylonjs/core/assetContainer';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
+import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
 
 interface CameraPosition {
   target: {
@@ -56,6 +57,14 @@ SceneLoader.OnPluginActivatedObservable.add((loader: ISceneLoaderPluginAsync | I
     (loader as GLTFFileLoader).animationStartMode = 0;
   }
 });
+
+DracoCompression.Configuration = {
+  decoder: {
+    wasmUrl: new URL('../../public/wasm/draco/draco_decoder_gltf.js', import.meta.url).href,
+    wasmBinaryUrl: new URL('../../public/wasm/draco/draco_decoder_gltf.wasm', import.meta.url).href,
+    fallbackUrl: new URL('../../public/wasm/draco/draco_wasm_wrapper_gltf.js', import.meta.url).href,
+  },
+};
 
 function pointerUpEventHandler(): void {
   if (canvas.value) {
