@@ -90,6 +90,8 @@ function drop(event: DragEvent): void {
         outputPath.value = path.dirname(file.path);
         inputFileSize.value = file.size;
         outputFile.value = null;
+
+        break;
       }
     }
   }
@@ -134,11 +136,13 @@ function doPack(): void {
 
   outputFileSize.value = 0;
   isProcessing.value = true;
+  // cameraPosition.value = null;
   
   addLog('Requesting pack for ' + inputFile.value?.path);
 }
 
 function updateCameraPosition(event: CameraPosition) {
+  console.log('app.updateCameraPosition', event);
   cameraPosition.value = event;
 }
 
@@ -256,7 +260,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
             </div>
             <div v-if="outputFile" class="canvas-container">
               <template v-if="isProcessing === false">
-                <BabylonScene :model="outputFile" @camera-move="updateCameraPosition" v-if="outputFile" />
+                <BabylonScene v-if="outputFile" :model="outputFile" @camera-move="updateCameraPosition" />
                 <FileInfo :name="outputFile.name" :size="outputFileSize" />
               </template>
               <template v-if="isProcessing === true">
