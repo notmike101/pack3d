@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import '@babylonjs/loaders/gLTF';
+import '@babylonjs/loaders/glTF/2.0';
 import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Loading/loadingScreen';
 import '@babylonjs/core/Engines/Extensions/engine.views';
