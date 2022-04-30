@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue';
-import type { Ref } from 'vue';
+import { inject, computed } from 'vue';
+import type { Ref, ComputedRef } from 'vue';
 
 const logs: Ref<[]> = inject('logs')!;
-const logString: Ref<string> = ref<string>('');
-
-watch(logs, () => {
-  logString.value = logs.value.join('\n');
-});
+const logString: ComputedRef<string> = computed((): string => logs.value.join('\n'));
 </script>
 
 <template>
   <footer class="log">
-    <textarea>{{ logs.map((log: string) => log.trim()).join('\n') }}</textarea>
+    <textarea>{{ logString }}</textarea>
   </footer>
 </template>
 
@@ -37,13 +33,6 @@ $font-size: 12px;
     resize: none;
     width: calc(100% - 10px);
     height: calc(100% - 10px);
-  }
-
-  p {
-    padding: 0;
-    margin: 0;
-    font-family: monospace;
-    font-size: $font-size;
   }
 }
 </style>
