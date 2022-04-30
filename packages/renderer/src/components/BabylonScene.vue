@@ -4,7 +4,7 @@ import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Loading/loadingScreen';
 import '@babylonjs/core/Engines/Extensions/engine.views';
 
-import { onMounted, onUpdated, ref, inject, watch, onUnmounted, EmitsOptions } from 'vue';
+import { onMounted, onUpdated, ref, inject, watch, onUnmounted } from 'vue';
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
