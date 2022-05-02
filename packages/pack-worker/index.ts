@@ -143,13 +143,14 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
         mode: options.basisMethod,
         quality: null,
         powerOfTwo: null,
+        level: null,
       };
 
       if (options.basisMethod === 'etc1s') {
         passedOptions.quality = options.etc1sQuality;
         passedOptions.powerOfTwo = options.etc1sResizeNPOT;
       } else if (options.basisMethod === 'uastc') {
-        passedOptions.quality = options.uastcQuality;
+        passedOptions.level = options.uastcLevel;
         passedOptions.powerOfTwo = options.uastcResizeNPOT;
       }
 

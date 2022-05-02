@@ -86,41 +86,26 @@ export function createParams(slots, channels, size, logger, numTextures, options
 
   if (options.mode === Mode.UASTC) {
     const _options = options;
-    params.push('--uastc', _options.level);
-    if (_options.rdo !== UASTC_DEFAULTS.rdo) {
-      params.push('--uastc_rdo_l', _options.rdo);
-    }
-    if (_options.rdoDictionarySize !== UASTC_DEFAULTS.rdoDictionarySize) {
-      params.push('--uastc_rdo_d', _options.rdoDictionarySize);
-    }
-    if (_options.rdoBlockScale !== UASTC_DEFAULTS.rdoBlockScale) {
-      params.push('--uastc_rdo_b', _options.rdoBlockScale);
-    }
-    if (_options.rdoStdDev !== UASTC_DEFAULTS.rdoStdDev) {
-      params.push('--uastc_rdo_s', _options.rdoStdDev);
-    }
+
+    params.push('--uastc', _options.level ?? UASTC_DEFAULTS.level);
+    params.push('--uastc_rdo_l', _options.rdo ?? UASTC_DEFAULTS.rdo);
+    params.push('--uastc_rdo_d', _options.rdoDictionarySize ?? UASTC_DEFAULTS.rdoDictionarySize);
+    params.push('--uastc_rdo_b', _options.rdoBlockScale ?? UASTC_DEFAULTS.rdoBlockScale);
+    params.push('--uastc_rdo_s', _options.rdoStdDev ?? UASTC_DEFAULTS.rdoStdDev);
+    
     if (!_options.rdoMultithreading) {
       params.push('--uastc_rdo_m');
     }
+
     if (_options.zstd && _options.zstd > 0) {
       params.push('--zcmp', _options.zstd);
     }
   } else {
     const _options = options;
-    params.push('--bcmp');
-    if (_options.quality === undefined) {
-      _options.quality = ETC1S_DEFAULTS.quality;
-    }
-    if (_options.quality !== ETC1S_DEFAULTS.quality) {
-      params.push('--qlevel', _options.quality);
-    }
 
-    if (_options.compression === undefined) {
-      _options.compression = ETC1S_DEFAULTS.compression;
-    }
-    if (_options.compression !== ETC1S_DEFAULTS.compression) {
-      params.push('--clevel', _options.compression);
-    }
+    params.push('--bcmp');
+    params.push('--qlevel', _options.quality ?? ETC1S_DEFAULTS.quality);
+    params.push('--clevel', _options.compression ?? ETC1S_DEFAULTS.compression);
 
     if (_options.maxEndpoints) params.push('--max_endpoints', _options.maxEndpoints);
     if (_options.maxSelectors) params.push('--max_selectors', _options.maxSelectors);
