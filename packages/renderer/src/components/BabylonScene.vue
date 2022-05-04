@@ -155,8 +155,10 @@ function createEnvironment(): void {
   engine = new Engine(canvas.value);
   scene = new Scene(engine);
 
-  scene.createDefaultLight();
-  scene.createDefaultSkybox();
+  scene.createDefaultEnvironment();
+
+  // scene.createDefaultLight();
+  // scene.createDefaultSkybox();
 
   camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
 
