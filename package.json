@@ -1,7 +1,7 @@
 {
   "name": "pack3d",
   "description": "Pack3D",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/main/index.cjs",
   "author": "Mike Orozco <me@mikeorozco.dev>",
   "homepage": "https://github.com/notmike101/pack3d",
