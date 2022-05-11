@@ -8,6 +8,10 @@ function menuClose(): void {
 function menuMinimize(): void {
   ipcRenderer.send('menu-minimize');
 }
+
+function menuHelp(): void {
+  ipcRenderer.send('menu-help');
+}
 </script>
 
 <template>
@@ -19,6 +23,7 @@ function menuMinimize(): void {
       <span>Pack3D - Mike Orozco (notmike101)</span>
     </div>
     <div class="buttons">
+      <button type="button" class="help" @click="menuHelp">Help</button>
       <button type="button" class="minimize" @click="menuMinimize"></button>
       <button type="button" class="close" @click="menuClose"></button>
     </div>

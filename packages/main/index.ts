@@ -19,6 +19,7 @@ if (!app.requestSingleInstanceLock()) {
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let mainWin: BrowserWindow | null = null;
+let helpWin: BrowserWindow | null = null;
 
 async function createWindow(): Promise<void> {
   mainWin = new BrowserWindow({
@@ -115,4 +116,32 @@ ipcMain.on('menu-close', (): void => {
 
 ipcMain.on('menu-minimize', (): void => {
   mainWin?.minimize();
+});
+
+ipcMain.on('menu-help', (): void => {
+  helpWin = new BrowserWindow({
+    title: 'Pack3D Help',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false,
+      nodeIntegrationInWorker: true,
+      devTools: !app.isPackaged,
+    },
+    resizable: false,
+    width: 600,
+    height: 500,
+    frame: true,
+  });
+
+  helpWin.setMenu(null);
+
+  if (app.isPackaged) {
+    helpWin.loadFile(path.join(__dirname, '../renderer/help.html'));
+  } else {
+    const url: string = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}/help.html`;
+
+    helpWin.loadURL(url);
+    helpWin.webContents.openDevTools();
+  }
 });

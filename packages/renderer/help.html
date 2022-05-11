@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="script-src https://preview.babylonjs.com 'self' 'unsafe-inline' 'unsafe-eval'; worker-src blob: 'self' 'unsafe-inline' 'unsafe-eval';" />
+    <title>Pack3D Help</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+        height: 100%;
+      }
+
+      aside {
+        display: flex;
+        flex-direction: column;
+        width: 125px;
+        background-color: white;
+        position: fixed;
+        border-right: 1px solid black;
+        height: 100%;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        margin-left: 125px;
+        padding: 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <aside>
+        Side menu
+      </aside>
+      <main>
+        Main content
+      </main>
+    </div>
+  </body>
+</html>
