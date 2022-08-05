@@ -18,6 +18,7 @@ import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureCon
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Ref } from 'vue';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
 
 interface CameraPosition {
   target: {
@@ -46,10 +47,12 @@ let engine: Engine | null = null;
 let scene: Scene | null = null;
 let camera: ArcRotateCamera | null = null;
 let loadedModelPath: any = null;
-let renderNextFrame: number = 0;
+let renderNextFrame = 0;
+let renderSemaphore = 0;
 let activeEntity: AssetContainer | null = null;
 let savedCameraPosition: CameraPosition | null = null;
-const resizeObserver: ResizeObserver = new ResizeObserver(resize);
+let resizeObserver: ResizeObserver | null = null;
+let isCanvasGrabbed = false;
 
 GLTFFileLoader.IncrementalLoading = false;
 
@@ -78,61 +81,61 @@ KhronosTextureContainer2.URLConfig = {
   wasmZSTDDecoder: null,
 };
 
-function pointerUpEventHandler(): void {
-  if (canvas.value) {
-    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
-  }
+const pointerUpEventHandler = (): void => {
+  isCanvasGrabbed = false;
 
   if (!camera!.position.equals(savedCameraPosition!.position as Vector3) || !camera!.target.equals(savedCameraPosition!.target as Vector3)) {
     emitCameraPosition();
   }
-}
 
-function pointerDownEventHandler(): void {  
-  if (canvas.value) {
-    canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
-  }
+  renderSemaphore -= 1;
+};
+
+const pointerDownEventHandler = (): void => {
+  isCanvasGrabbed = true;
 
   savedCameraPosition = {
     position: camera!.position,
     target: camera!.target,
   };
 
-  renderNextFrame += 1;
-}
+  renderSemaphore += 1;
+};
 
-function pointerMoveEventHandler(): void {
-  renderNextFrame += 1;
+const pointerMoveEventHandler = (): void => {
+  if (isCanvasGrabbed === false) return;
 
-  emitCameraPosition();
-}
-
-function wheelEventHandler(): void {
   renderNextFrame += 1;
 
   emitCameraPosition();
-}
+};
 
-function emitCameraPosition(): void {
-  if (camera !== null) {
-    const newCameraPosition: CameraPosition = {
-      position: {
-        x: camera?.position.x,
-        y: camera?.position.y,
-        z: camera?.position.z,
-      },
-      target: {
-        x: camera?.target.x,
-        y: camera?.target.y,
-        z: camera?.target.z,
-      },
-    };
+const wheelEventHandler = (): void => {
+  renderNextFrame += 1;
 
-    emit('cameraMove', newCameraPosition);
-  }
-}
+  emitCameraPosition();
+};
 
-function getBoundingInfo(mesh: AbstractMesh | Mesh): BoundingInfo {
+const emitCameraPosition = (): void => {
+  if (!camera) return;
+
+  const newCameraPosition: CameraPosition = {
+    position: {
+      x: camera?.position.x,
+      y: camera?.position.y,
+      z: camera?.position.z,
+    },
+    target: {
+      x: camera?.target.x,
+      y: camera?.target.y,
+      z: camera?.target.z,
+    },
+  };
+
+  emit('cameraMove', newCameraPosition);
+};
+
+const getBoundingInfo = (mesh: AbstractMesh | Mesh): BoundingInfo => {
   const childMeshes: AbstractMesh[] = mesh.getChildMeshes();
   const min: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
   const max: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
@@ -145,9 +148,9 @@ function getBoundingInfo(mesh: AbstractMesh | Mesh): BoundingInfo {
   });
 
   return new BoundingInfo(min, max);
-}
+};
 
-function createEnvironment(): void {
+const createEnvironment = (): void => {
   if (engine) {
     engine.dispose();
   }
@@ -173,12 +176,14 @@ function createEnvironment(): void {
 
   camera.attachControl(false);
 
+  scene.onPointerObservable.add(pointerObservable);
+
   engine.runRenderLoop(engineRenderLoop);
 
   renderNextFrame += 1;
-}
+};
 
-function fitCameraToFrame(): void {
+const fitCameraToFrame = (): void => {
   if (activeEntity === null) return;
   if (!camera) return;
 
@@ -202,13 +207,15 @@ function fitCameraToFrame(): void {
   emitCameraPosition();
 
   renderNextFrame += 1;
-}
+};
 
-function addModelToScene(modelPath: string): Promise<void> {
+const addModelToScene = (modelPath: string): Promise<void> => {
   return new Promise(async (resolve): Promise<void> => {
     if (activeEntity !== null) {
       activeEntity.removeAllFromScene();
     }
+
+    renderSemaphore += 1;
 
     const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
 
@@ -217,34 +224,34 @@ function addModelToScene(modelPath: string): Promise<void> {
 
     assetContainer.addAllToScene();
 
-    renderNextFrame += 1;
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
-    setTimeout((): void => {
-      renderNextFrame += 1;
-
-      resolve();
-    }, 250);
+    renderSemaphore -= 1;
   });
-}
+};
 
-function engineRenderLoop(): void {
-  if (scene && renderNextFrame > 0) {
+const engineRenderLoop = (): void => {
+  if (!scene) return;
+
+  if (renderNextFrame > 0 || renderSemaphore > 0) {
     renderNextFrame = 0;
 
     scene.render();
   }
-}
+};
 
-function setCameraPosition(newCameraPosition: CameraPosition): void {
-  if (camera !== null) {
-    camera.position = new Vector3(newCameraPosition.position.x, newCameraPosition.position.y, newCameraPosition.position.z);
-    camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
+const setCameraPosition = (newCameraPosition: CameraPosition): void => {
+  if (!camera) return;
 
-    renderNextFrame += 1;
-  }
-}
+  camera.position = new Vector3(newCameraPosition.position.x, newCameraPosition.position.y, newCameraPosition.position.z);
+  camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
 
-function resize(): void {
+  renderNextFrame += 1;
+
+  console.log('setCameraposition', newCameraPosition);
+};
+
+const resize = (): void => {
   if (engine && canvas.value) {
     const { parentElement }: HTMLElement = canvas.value;
 
@@ -258,10 +265,12 @@ function resize(): void {
       renderNextFrame += 1;
     }
   }
-}
+};
 
-async function onUpdatedHandler(): Promise<void> {
+const onUpdatedHandler = async (): Promise<void> => {
   if (props.model?.path !== loadedModelPath) {
+    createEnvironment();
+
     const replacingExistingModel: boolean = activeEntity !== null;
 
     await addModelToScene(props.model.path);
@@ -272,15 +281,24 @@ async function onUpdatedHandler(): Promise<void> {
       setCameraPosition(cameraPosition.value);
     }
   }
-}
+};
 
-async function onMountedHandler(): Promise<void> {
-  if (canvas.value) {  
-    canvas.value.addEventListener('pointerup', pointerUpEventHandler);
-    canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
-    canvas.value.addEventListener('wheel', wheelEventHandler);
+const pointerObservable = (pointerInfo: PointerInfo) => {
+  console.log('pointerObservable', pointerInfo);
+  if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+    pointerDownEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERUP) {
+    pointerUpEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERMOVE && isCanvasGrabbed === true) {
+    pointerMoveEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERWHEEL) {
+    wheelEventHandler();
+  }
+};
 
-    if (canvas.value.parentElement) {
+const onMountedHandler = async (): Promise<void> => {
+  if (canvas.value) {
+    if (canvas.value.parentElement && resizeObserver !== null) {
       resizeObserver.observe(canvas.value.parentElement);
     }
 
@@ -296,30 +314,25 @@ async function onMountedHandler(): Promise<void> {
       setCameraPosition(cameraPosition.value);
     }
   }
-}
+};
 
-function cameraPositionWatcher(): void {
+const cameraPositionWatcher = (): void => {
   if (cameraPosition.value !== null) {
     setCameraPosition(cameraPosition.value);
   }
-}
+};
 
-function onUnmountedHandler(): void {
-  if (canvas.value) {
-    canvas.value.removeEventListener('pointerup', pointerUpEventHandler);
-    canvas.value.removeEventListener('pointerdown', pointerDownEventHandler);
-    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
-    canvas.value.removeEventListener('wheel', wheelEventHandler);
-
-    if (canvas.value.parentElement) {
-      resizeObserver.unobserve(canvas.value.parentElement);
-    }
-
-    if (engine) {
-      engine.dispose();
-    }
+const onUnmountedHandler = (): void => {
+  if (engine) {
+    engine.dispose();
   }
-}
+
+  if (canvas.value?.parentElement && resizeObserver !== null) {
+    resizeObserver.unobserve(canvas.value.parentElement);
+  }
+};
+
+resizeObserver = new ResizeObserver(resize);
 
 onUpdated(onUpdatedHandler);
 onMounted(onMountedHandler);

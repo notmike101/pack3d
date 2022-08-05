@@ -65,11 +65,11 @@ const cameraPosition = ref<CameraPosition | null>(null);
 const logs = ref([] as string[]);
 let errorMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
-function addLog(data: any): void {
+const addLog = (data: any): void => {
   logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
-}
+};
 
-function drop(event: DragEvent): void {
+const drop = (event: DragEvent): void => {
   event.preventDefault();
   event.stopPropagation();
 
@@ -91,13 +91,13 @@ function drop(event: DragEvent): void {
   }
 
   addLog('Added file: ' + inputFile.value?.path);
-}
+};
 
-function dragover(event: DragEvent): void {
+const dragover = (event: DragEvent): void => {
   event.preventDefault();
-}
+};
 
-function doPack(): void {
+const doPack = (): void => {
   ipcRenderer.send('request-pack', {
     file: inputFile.value?.path,
     doDedupe: doDedupe.value,
@@ -131,39 +131,38 @@ function doPack(): void {
   outputFileSize.value = 0;
   isProcessing.value = true;
   // cameraPosition.value = null;
-  
+
   addLog('Requesting pack for ' + inputFile.value?.path);
-}
+};
 
-function updateCameraPosition(event: CameraPosition): void {
-  console.log('app.updateCameraPosition', event);
+const updateCameraPosition = (event: CameraPosition): void => {
   cameraPosition.value = event;
-}
+};
 
-function onPackSuccess(event: Event, data: any): void {
+const onPackSuccess = (event: Event, data: any): void => {
   isProcessing.value = false;
   outputFile.value = data.file;
   outputFileSize.value = data.file.binary.byteLength;
 
   addLog('Packing successful. Reduced file size by ' + (100 - (outputFileSize.value / inputFileSize.value) * 100).toFixed(2) + '%.');
-}
+};
 
-function onPackError(event: Event, data: any): void {
+const onPackError = (event: Event, data: any): void => {
   errorMessage.value = data.error.message;
   isProcessing.value = false;
 
   addLog('Error: ' + data.error.message);
-}
+};
 
-function onPackSizeReport(event: Event, data: any): void {
+const onPackSizeReport = (event: Event, data: any): void => {
   addLog(`Action ${data.action} reduced file size by ${(100 - (data.endSize / data.startSize) * 100).toFixed(2)}%.`);
-}
+};
 
-function onLoggingEvent(event: Event, data: any): void {
+const onLoggingEvent = (event: Event, data: any): void => {
   addLog(`[${data.verbosity}] ${data.text}`);
-}
+};
 
-function errorWatcher(): void {
+const errorWatcher = (): void => {
   if (errorMessageTimeout) {
     clearTimeout(errorMessageTimeout);
   }
@@ -173,7 +172,7 @@ function errorWatcher(): void {
       errorMessage.value = '';
     }, 5000);
   }
-}
+};
 
 watch(errorMessage, errorWatcher);
 
@@ -335,7 +334,7 @@ $font-size: 12px;
       margin-bottom: auto;
       display: flex;
       flex-direction: column;
-      font-size: $font-size;    
+      font-size: $font-size;
     }
 
     .bottom-options {

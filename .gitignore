@@ -9,3 +9,5 @@ tmp
 **/.tmp
 release
 models
+tests/*
+!tests/.gitkeep
