@@ -13,17 +13,17 @@ const quantizationTexcoord: Ref<number> = inject('quantizationTexcoord')!;
 const encodeSpeed: Ref<number> = inject('encodeSpeed')!;
 const decodeSpeed: Ref<number> = inject('decodeSpeed')!;
 
-function updateVertexCompressionMethod(value: string): void {
+const updateVertexCompressionMethod = (value: string): void => {
   if (doDraco.value === true) {
     vertexCompressionMethod.value = value;
   }
-}
+};
 
-function updateQuantizationVolume(value: string): void {
+const updateQuantizationVolume = (value: string): void => {
   if (doDraco.value === true) {
     quantizationVolume.value = value;
   }
-}
+};
 </script>
 
 <template>

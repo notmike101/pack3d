@@ -14,23 +14,23 @@ const etc1sResizeNPOT: Ref<boolean> = inject('etc1sResizeNPOT')!;
 const uastcLevel: Ref<number> = inject('uastcLevel')!;
 const uastcResizeNPOT: Ref<boolean> = inject('uastcResizeNPOT')!;
 
-function updateBasisMethod(method: string): void {
+const updateBasisMethod = (method: string): void => {
   if (doBasis.value === true) {
     basisMethod.value = method;
   }
-}
+};
 
-function updateResamplingFilter(value: string): void {
+const updateResamplingFilter = (value: string): void => {
   if (doBasis.value === true) {
     resamplingFilter.value = value;
   }
-}
+};
 
-function updatePNGFormatFilter(value: string): void {
+const updatePNGFormatFilter = (value: string): void => {
   if (doBasis.value === true) {
     pngFormatFilter.value = value;
   }
-}
+};
 </script>
 
 <template>
