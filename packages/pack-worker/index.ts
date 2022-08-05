@@ -213,20 +213,20 @@ async function doDraco(document, documentBinary, options, fileName, appendString
   });
 
   document.createExtension(DracoMeshCompression)
-        .setRequired(true)
-        .setEncoderOptions({
-          decodeSpeed: options.decodeSpeed,
-          encodeSpeed: options.encodeSpeed,
-          method: options.vertexCompressionMethod,
-          quantizationVolume: options.quantizationVolume,
-          quantizationBits: {
-            POSITION: options.quantizationPosition,
-            NORMAL: options.quantizationNormal,
-            COLOR: options.quantizationColor,
-            TEX_COORD: options.quantizationTexCoord,
-            GENERIC: options.quantizationGeneric,
-          }
-        });
+    .setRequired(true)
+    .setEncoderOptions({
+      decodeSpeed: options.decodeSpeed,
+      encodeSpeed: options.encodeSpeed,
+      method: options.vertexCompressionMethod,
+      quantizationVolume: options.quantizationVolume,
+      quantizationBits: {
+        POSITION: options.quantizationPosition,
+        NORMAL: options.quantizationNormal,
+        COLOR: options.quantizationColor,
+        TEX_COORD: options.quantizationTexCoord,
+        GENERIC: options.quantizationGeneric,
+      }
+    });
 
   documentBinary = await io.writeBinary(document);
 
