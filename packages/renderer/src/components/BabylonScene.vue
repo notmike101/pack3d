@@ -83,23 +83,23 @@ KhronosTextureContainer2.URLConfig = {
 
 const pointerUpEventHandler = (): void => {
   isCanvasGrabbed = false;
+  renderSemaphore -= 1;
 
   if (!camera!.position.equals(savedCameraPosition!.position as Vector3) || !camera!.target.equals(savedCameraPosition!.target as Vector3)) {
     emitCameraPosition();
   }
-
-  renderSemaphore -= 1;
 };
 
 const pointerDownEventHandler = (): void => {
   isCanvasGrabbed = true;
+  renderSemaphore += 1;
+
+  if (!camera) return;
 
   savedCameraPosition = {
-    position: camera!.position,
-    target: camera!.target,
+    position: camera.position,
+    target: camera.target,
   };
-
-  renderSemaphore += 1;
 };
 
 const pointerMoveEventHandler = (): void => {
@@ -121,14 +121,14 @@ const emitCameraPosition = (): void => {
 
   const newCameraPosition: CameraPosition = {
     position: {
-      x: camera?.position.x,
-      y: camera?.position.y,
-      z: camera?.position.z,
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
     },
     target: {
-      x: camera?.target.x,
-      y: camera?.target.y,
-      z: camera?.target.z,
+      x: camera.target.x,
+      y: camera.target.y,
+      z: camera.target.z,
     },
   };
 
@@ -209,25 +209,23 @@ const fitCameraToFrame = (): void => {
   renderNextFrame += 1;
 };
 
-const addModelToScene = (modelPath: string): Promise<void> => {
-  return new Promise(async (resolve): Promise<void> => {
-    if (activeEntity !== null) {
-      activeEntity.removeAllFromScene();
-    }
+const addModelToScene = async (modelPath: string): Promise<void> => {
+  if (activeEntity !== null) {
+    activeEntity.removeAllFromScene();
+  }
 
-    renderSemaphore += 1;
+  renderSemaphore += 1;
 
-    const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
+  const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
 
-    activeEntity = assetContainer;
-    loadedModelPath = modelPath;
+  activeEntity = assetContainer;
+  loadedModelPath = modelPath;
 
-    assetContainer.addAllToScene();
+  assetContainer.addAllToScene();
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
+  await new Promise((resolve) => setTimeout(resolve, 250));
 
-    renderSemaphore -= 1;
-  });
+  renderSemaphore -= 1;
 };
 
 const engineRenderLoop = (): void => {
@@ -247,44 +245,41 @@ const setCameraPosition = (newCameraPosition: CameraPosition): void => {
   camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
 
   renderNextFrame += 1;
-
-  console.log('setCameraposition', newCameraPosition);
 };
 
 const resize = (): void => {
-  if (engine && canvas.value) {
-    const { parentElement }: HTMLElement = canvas.value;
+  if (!engine || !canvas.value) return;
 
-    if (parentElement) {
-      engine.setSize(0, 0);
+  const { parentElement }: HTMLElement = canvas.value;
 
-      const { width, height }: DOMRect = parentElement.getBoundingClientRect();
+  if (parentElement) {
+    engine.setSize(0, 0);
 
-      engine.setSize(width | 0, height | 0, true);
+    const { width, height }: DOMRect = parentElement.getBoundingClientRect();
 
-      renderNextFrame += 1;
-    }
+    engine.setSize(width | 0, height | 0, true);
+
+    renderNextFrame += 1;
   }
 };
 
 const onUpdatedHandler = async (): Promise<void> => {
-  if (props.model?.path !== loadedModelPath) {
-    createEnvironment();
+  if (props.model?.path === loadedModelPath) return;
 
-    const replacingExistingModel: boolean = activeEntity !== null;
+  createEnvironment();
 
-    await addModelToScene(props.model.path);
+  const replacingExistingModel: boolean = activeEntity !== null;
 
-    if (replacingExistingModel || cameraPosition.value === null) {
-      fitCameraToFrame();
-    } else if(cameraPosition.value !== null) {
-      setCameraPosition(cameraPosition.value);
-    }
+  await addModelToScene(props.model.path);
+
+  if (replacingExistingModel || cameraPosition.value === null) {
+    fitCameraToFrame();
+  } else if(cameraPosition.value !== null) {
+    setCameraPosition(cameraPosition.value);
   }
 };
 
 const pointerObservable = (pointerInfo: PointerInfo) => {
-  console.log('pointerObservable', pointerInfo);
   if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
     pointerDownEventHandler();
   } else if (pointerInfo.type === PointerEventTypes.POINTERUP) {
@@ -297,29 +292,34 @@ const pointerObservable = (pointerInfo: PointerInfo) => {
 };
 
 const onMountedHandler = async (): Promise<void> => {
-  if (canvas.value) {
-    if (canvas.value.parentElement && resizeObserver !== null) {
-      resizeObserver.observe(canvas.value.parentElement);
-    }
+  if (!canvas.value) return;
 
-    createEnvironment();
+  if (resizeObserver === null) {
+    resizeObserver = new ResizeObserver(resize);
+  }
 
-    if (props.model) {
-      await addModelToScene(props.model.path);
-    }
+  if (canvas.value.parentElement) {
+    resizeObserver.observe(canvas.value.parentElement);
+  }
 
-    if (cameraPosition.value === null) {
-      fitCameraToFrame();
-    } else {
-      setCameraPosition(cameraPosition.value);
-    }
+  createEnvironment();
+
+  if (props.model) {
+    await addModelToScene(props.model.path);
+  }
+
+  if (cameraPosition.value === null) {
+    fitCameraToFrame();
+  } else {
+    console.log('mounted setCameraPosition', cameraPosition.value);
+    setCameraPosition(cameraPosition.value);
   }
 };
 
-const cameraPositionWatcher = (): void => {
-  if (cameraPosition.value !== null) {
-    setCameraPosition(cameraPosition.value);
-  }
+const cameraPositionWatcher = (newValue: CameraPosition | null): void => {
+  if (!newValue) return;
+
+  setCameraPosition(newValue);
 };
 
 const onUnmountedHandler = (): void => {
@@ -329,10 +329,9 @@ const onUnmountedHandler = (): void => {
 
   if (canvas.value?.parentElement && resizeObserver !== null) {
     resizeObserver.unobserve(canvas.value.parentElement);
+    resizeObserver = null;
   }
 };
-
-resizeObserver = new ResizeObserver(resize);
 
 onUpdated(onUpdatedHandler);
 onMounted(onMountedHandler);
