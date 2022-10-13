@@ -9,27 +9,22 @@ import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
 import { AssetContainer } from '@babylonjs/core/assetContainer';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
+import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
+import { waitFrames } from '../utils';
+
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Ref } from 'vue';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 
 interface CameraPosition {
-  target: {
-    x: number;
-    y: number;
-    z: number;
-  }
-  position: {
-    x: number;
-    y: number;
-    z: number;
-  }
+  target: Vector3;
+  position: Vector3;
 }
 
 interface Props {
@@ -39,21 +34,22 @@ interface Props {
 const props: Props = defineProps<Props>();
 const emit = defineEmits(['cameraMove']);
 
-const canvas: Ref<HTMLCanvasElement | null> = ref<HTMLCanvasElement | null>(null);
-const cameraPosition: Ref<CameraPosition | null> = inject('cameraPosition')!;
-
-let engine: Engine | null = null;
-let scene: Scene | null = null;
-let camera: ArcRotateCamera | null = null;
-let loadedModelPath: any = null;
-let renderNextFrame: number = 0;
-let activeEntity: AssetContainer | null = null;
-let savedCameraPosition: CameraPosition | null = null;
-const resizeObserver: ResizeObserver = new ResizeObserver(resize);
+const canvas = ref<HTMLCanvasElement | null>(null);
+const cameraPosition = inject('cameraPosition') as Ref<CameraPosition | null>;
+const engine = ref<Engine | null>(null);
+const scene = ref<Scene | null>(null);
+const camera = ref<ArcRotateCamera | null>(null);
+const loadedModelPath = ref<string | null>(null);
+const renderNextFrame = ref<number>(0);
+const renderSemaphore = ref<number>(0);
+const activeEntity = ref<AssetContainer | null>(null);
+const savedCameraPosition = ref<CameraPosition | null>(null);
+const resizeObserver = ref<ResizeObserver | null>(null);
+const isCanvasGrabbed = ref<boolean>(false);
 
 GLTFFileLoader.IncrementalLoading = false;
 
-SceneLoader.OnPluginActivatedObservable.add((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
+SceneLoader.OnPluginActivatedObservable.add((loader) => {
   if (loader.name === 'gltf') {
     (loader as GLTFFileLoader).animationStartMode = 0;
   }
@@ -61,265 +57,256 @@ SceneLoader.OnPluginActivatedObservable.add((loader: ISceneLoaderPluginAsync | I
 
 DracoCompression.Configuration = {
   decoder: {
-    wasmUrl: new URL('../../public/wasm/draco/draco_decoder_gltf.js', import.meta.url).href,
-    wasmBinaryUrl: new URL('../../public/wasm/draco/draco_decoder_gltf.wasm', import.meta.url).href,
-    fallbackUrl: new URL('../../public/wasm/draco/draco_wasm_wrapper_gltf.js', import.meta.url).href,
+    wasmUrl: new URL('/wasm/draco/draco_decoder_gltf.js', import.meta.url).href,
+    wasmBinaryUrl: new URL('/wasm/draco/draco_decoder_gltf.wasm', import.meta.url).href,
+    fallbackUrl: new URL('/wasm/draco/draco_wasm_wrapper_gltf.js', import.meta.url).href,
   },
 };
 
 KhronosTextureContainer2.URLConfig = {
-  jsDecoderModule: new URL('../../public/wasm/ktx2/ktx2Decoder.js', import.meta.url).href,
-  jsMSCTranscoder: new URL('../../public/wasm/basis/msc_basis_transcoder.js', import.meta.url).href,
-  wasmMSCTranscoder: new URL('../../public/wasm/basis/msc_basis_transcoder.wasm', import.meta.url).href,
+  jsDecoderModule: new URL('/wasm/ktx2/ktx2Decoder.js', import.meta.url).href,
+  jsMSCTranscoder: new URL('/wasm/basis/msc_basis_transcoder.js', import.meta.url).href,
+  wasmMSCTranscoder: new URL('/wasm/basis/msc_basis_transcoder.wasm', import.meta.url).href,
   wasmUASTCToASTC: null,
-  wasmUASTCToBC7: new URL('../../public/wasm/ktx2/uastc_bc7.wasm', import.meta.url).href,
-  wasmUASTCToRGBA_SRGB: new URL('../../public/wasm/ktx2/uastc_rgba_srgb.wasm', import.meta.url).href,
-  wasmUASTCToRGBA_UNORM: new URL('../../public/wasm/ktx2/uastc_rgba32_unorm.wasm', import.meta.url).href,
+  wasmUASTCToBC7: new URL('/wasm/ktx2/uastc_bc7.wasm', import.meta.url).href,
+  wasmUASTCToRGBA_SRGB: new URL('/wasm/ktx2/uastc_rgba_srgb.wasm', import.meta.url).href,
+  wasmUASTCToRGBA_UNORM: new URL('/wasm/ktx2/uastc_rgba32_unorm.wasm', import.meta.url).href,
   wasmZSTDDecoder: null,
 };
 
-function pointerUpEventHandler(): void {
-  if (canvas.value) {
-    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
-  }
+const pointerUpEventHandler = () => {
+  isCanvasGrabbed.value = false;
+  renderSemaphore.value -= 1;
 
-  if (!camera!.position.equals(savedCameraPosition!.position as Vector3) || !camera!.target.equals(savedCameraPosition!.target as Vector3)) {
-    emitCameraPosition();
+  if (camera.value && savedCameraPosition.value) {
+    if (!camera.value.position.equals(savedCameraPosition.value.position) || !camera.value.target.equals(savedCameraPosition.value.target)) {
+      emitCameraPosition();
+    }
   }
-}
+};
 
-function pointerDownEventHandler(): void {  
-  if (canvas.value) {
-    canvas.value.addEventListener('pointermove', pointerMoveEventHandler);
+const pointerDownEventHandler = () => {
+  isCanvasGrabbed.value = true;
+  renderSemaphore.value += 1;
+
+  if (camera.value) {
+    savedCameraPosition.value = {
+      position: camera.value.position.clone(),
+      target: camera.value.target.clone(),
+    };
   }
+};
 
-  savedCameraPosition = {
-    position: camera!.position,
-    target: camera!.target,
+const pointerMoveEventHandler = () => {
+  if (isCanvasGrabbed.value === false) return;
+
+  renderNextFrame.value += 1;
+
+  emitCameraPosition();
+};
+
+const wheelEventHandler = () => {
+  renderNextFrame.value += 1;
+
+  emitCameraPosition();
+};
+
+const emitCameraPosition = () => {
+  if (!camera.value) return;
+
+  const newCameraPosition: CameraPosition = {
+    position: camera.value.position.clone(),
+    target: camera.value.target.clone(),
   };
 
-  renderNextFrame += 1;
-}
+  emit('cameraMove', newCameraPosition);
+};
 
-function pointerMoveEventHandler(): void {
-  renderNextFrame += 1;
+const getBoundingInfo = (mesh: AbstractMesh | Mesh) => {
+  const childMeshes = mesh.getChildMeshes();
+  const min = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
+  const max = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
 
-  emitCameraPosition();
-}
-
-function wheelEventHandler(): void {
-  renderNextFrame += 1;
-
-  emitCameraPosition();
-}
-
-function emitCameraPosition(): void {
-  if (camera !== null) {
-    const newCameraPosition: CameraPosition = {
-      position: {
-        x: camera?.position.x,
-        y: camera?.position.y,
-        z: camera?.position.z,
-      },
-      target: {
-        x: camera?.target.x,
-        y: camera?.target.y,
-        z: camera?.target.z,
-      },
-    };
-
-    emit('cameraMove', newCameraPosition);
-  }
-}
-
-function getBoundingInfo(mesh: AbstractMesh | Mesh): BoundingInfo {
-  const childMeshes: AbstractMesh[] = mesh.getChildMeshes();
-  const min: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
-  const max: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
-
-  childMeshes.forEach((childMesh: AbstractMesh) => {
-    const { boundingBox }: BoundingInfo = childMesh.getBoundingInfo();
+  childMeshes.forEach((childMesh) => {
+    const { boundingBox } = childMesh.getBoundingInfo();
 
     min.minimizeInPlace(boundingBox.minimumWorld);
     max.maximizeInPlace(boundingBox.maximumWorld);
   });
 
   return new BoundingInfo(min, max);
-}
+};
 
-function createEnvironment(): void {
-  if (engine) {
-    engine.dispose();
+const createEnvironment = () => {
+  if (engine.value) {
+    engine.value.dispose();
   }
 
-  engine = new Engine(canvas.value);
-  scene = new Scene(engine);
+  engine.value = new Engine(canvas.value);
+  scene.value = new Scene(engine.value as Engine);
 
-  scene.createDefaultEnvironment();
+  scene.value.createDefaultEnvironment({
+    createGround: false,
+  });
 
-  // scene.createDefaultLight();
-  // scene.createDefaultSkybox();
+  camera.value = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene.value as Scene);
 
-  camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
+  engine.value.inputElement = canvas.value;
 
-  engine.inputElement = canvas.value;
+  camera.value.allowUpsideDown = false;
+  camera.value.minZ = 0.1;
+  camera.value.lowerRadiusLimit = 1;
+  camera.value.fov = 0.767945;
+  camera.value.inertia = 0,
+  camera.value.panningInertia = 0;
 
-  camera.allowUpsideDown = false;
-  camera.minZ = 0.1;
-  camera.lowerRadiusLimit = 1;
-  camera.fov = 0.767945;
-  camera.inertia = 0,
-  camera.panningInertia = 0;
+  camera.value.attachControl(false);
 
-  camera.attachControl(false);
+  scene.value.onPointerObservable.add(pointerObservable);
 
-  engine.runRenderLoop(engineRenderLoop);
+  engine.value.runRenderLoop(engineRenderLoop);
 
-  renderNextFrame += 1;
-}
+  renderNextFrame.value += 1;
+};
 
-function fitCameraToFrame(): void {
-  if (activeEntity === null) return;
-  if (!camera) return;
+const fitCameraToFrame = () => {
+  if (activeEntity.value === null) return;
+  if (!camera.value) return;
 
-  const { boundingBox, boundingSphere }: BoundingInfo = getBoundingInfo(activeEntity.createRootMesh());
+  const { boundingBox, boundingSphere } = getBoundingInfo(activeEntity.value.createRootMesh());
 
   const newCameraPosition: CameraPosition = {
-    position: {
-      x: boundingBox.centerWorld.x,
-      y: boundingBox.centerWorld.y,
-      z: boundingSphere.radiusWorld * 2,
-    },
-    target: {
-      x: boundingBox.centerWorld.x,
-      y: boundingBox.centerWorld.y,
-      z: boundingBox.centerWorld.z,
-    },
+    position: new Vector3(boundingBox.centerWorld.x, boundingBox.centerWorld.y, boundingSphere.radiusWorld * 2),
+    target: boundingBox.centerWorld.clone(),
   };
 
   setCameraPosition(newCameraPosition);
 
   emitCameraPosition();
 
-  renderNextFrame += 1;
-}
+  renderNextFrame.value += 1;
+};
 
-function addModelToScene(modelPath: string): Promise<void> {
-  return new Promise(async (resolve): Promise<void> => {
-    if (activeEntity !== null) {
-      activeEntity.removeAllFromScene();
-    }
-
-    const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
-
-    activeEntity = assetContainer;
-    loadedModelPath = modelPath;
-
-    assetContainer.addAllToScene();
-
-    renderNextFrame += 1;
-
-    setTimeout((): void => {
-      renderNextFrame += 1;
-
-      resolve();
-    }, 250);
-  });
-}
-
-function engineRenderLoop(): void {
-  if (scene && renderNextFrame > 0) {
-    renderNextFrame = 0;
-
-    scene.render();
+const addModelToScene = async (modelPath: string) => {
+  if (activeEntity.value !== null) {
+    activeEntity.value.removeAllFromScene();
   }
-}
 
-function setCameraPosition(newCameraPosition: CameraPosition): void {
-  if (camera !== null) {
-    camera.position = new Vector3(newCameraPosition.position.x, newCameraPosition.position.y, newCameraPosition.position.z);
-    camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
+  const assetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene.value as Scene);
 
-    renderNextFrame += 1;
+  activeEntity.value = assetContainer;
+  loadedModelPath.value = modelPath;
+
+  assetContainer.addAllToScene();
+
+  renderSemaphore.value += 1;
+  await waitFrames(5, scene.value as Scene);
+  renderSemaphore.value -= 1;
+};
+
+const engineRenderLoop = () => {
+  if (!scene.value) return;
+
+  if (renderNextFrame.value > 0 || renderSemaphore.value > 0) {
+    renderNextFrame.value = 0;
+
+    scene.value.render();
   }
-}
+};
 
-function resize(): void {
-  if (engine && canvas.value) {
-    const { parentElement }: HTMLElement = canvas.value;
+const setCameraPosition = (newCameraPosition: CameraPosition) => {
+  if (!camera.value) return;
 
-    if (parentElement) {
-      engine.setSize(0, 0);
+  camera.value.position = newCameraPosition.position.clone();
+  camera.value.target = newCameraPosition.target.clone();
 
-      const { width, height }: DOMRect = parentElement.getBoundingClientRect();
+  renderNextFrame.value += 1;
+};
 
-      engine.setSize(width | 0, height | 0, true);
+const resize = () => {
+  if (!engine.value || !canvas.value) return;
 
-      renderNextFrame += 1;
-    }
+  const { parentElement } = canvas.value;
+
+  if (parentElement) {
+    engine.value.setSize(0, 0);
+
+    const { width, height } = parentElement.getBoundingClientRect();
+
+    engine.value.setSize(width | 0, height | 0, true);
+
+    renderNextFrame.value += 1;
   }
-}
+};
 
-async function onUpdatedHandler(): Promise<void> {
-  if (props.model?.path !== loadedModelPath) {
-    const replacingExistingModel: boolean = activeEntity !== null;
+const onUpdatedHandler = async () => {
+  if (props.model?.path === loadedModelPath.value) return;
 
-    await addModelToScene(props.model.path);
+  createEnvironment();
 
-    if (replacingExistingModel || cameraPosition.value === null) {
-      fitCameraToFrame();
-    } else if(cameraPosition.value !== null) {
-      setCameraPosition(cameraPosition.value);
-    }
-  }
-}
+  const replacingExistingModel = activeEntity.value !== null;
 
-async function onMountedHandler(): Promise<void> {
-  if (canvas.value) {  
-    canvas.value.addEventListener('pointerup', pointerUpEventHandler);
-    canvas.value.addEventListener('pointerdown', pointerDownEventHandler);
-    canvas.value.addEventListener('wheel', wheelEventHandler);
+  await addModelToScene(props.model.path);
 
-    if (canvas.value.parentElement) {
-      resizeObserver.observe(canvas.value.parentElement);
-    }
-
-    createEnvironment();
-
-    if (props.model) {
-      await addModelToScene(props.model.path);
-    }
-
-    if (cameraPosition.value === null) {
-      fitCameraToFrame();
-    } else {
-      setCameraPosition(cameraPosition.value);
-    }
-  }
-}
-
-function cameraPositionWatcher(): void {
-  if (cameraPosition.value !== null) {
+  if (replacingExistingModel || cameraPosition.value === null) {
+    fitCameraToFrame();
+  } else if(cameraPosition.value !== null) {
     setCameraPosition(cameraPosition.value);
   }
-}
+};
 
-function onUnmountedHandler(): void {
-  if (canvas.value) {
-    canvas.value.removeEventListener('pointerup', pointerUpEventHandler);
-    canvas.value.removeEventListener('pointerdown', pointerDownEventHandler);
-    canvas.value.removeEventListener('pointermove', pointerMoveEventHandler);
-    canvas.value.removeEventListener('wheel', wheelEventHandler);
-
-    if (canvas.value.parentElement) {
-      resizeObserver.unobserve(canvas.value.parentElement);
-    }
-
-    if (engine) {
-      engine.dispose();
-    }
+const pointerObservable = (pointerInfo: PointerInfo) => {
+  if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
+    pointerDownEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERUP) {
+    pointerUpEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERMOVE && isCanvasGrabbed.value === true) {
+    pointerMoveEventHandler();
+  } else if (pointerInfo.type === PointerEventTypes.POINTERWHEEL) {
+    wheelEventHandler();
   }
-}
+};
+
+const onMountedHandler = async () => {
+  if (!canvas.value) return;
+
+  if (resizeObserver.value === null) {
+    resizeObserver.value = new ResizeObserver(resize);
+  }
+
+  if (canvas.value.parentElement) {
+    resizeObserver.value.observe(canvas.value.parentElement);
+  }
+
+  createEnvironment();
+
+  if (props.model) {
+    await addModelToScene(props.model.path);
+  }
+
+  if (cameraPosition.value === null) {
+    fitCameraToFrame();
+  } else {
+    setCameraPosition(cameraPosition.value);
+  }
+};
+
+const cameraPositionWatcher = (newValue: CameraPosition | null) => {
+  if (!newValue) return;
+
+  setCameraPosition(newValue);
+};
+
+const onUnmountedHandler = () => {
+  if (engine.value) {
+    engine.value.dispose();
+  }
+
+  if (canvas.value?.parentElement && resizeObserver.value !== null) {
+    resizeObserver.value.unobserve(canvas.value.parentElement);
+    resizeObserver.value = null;
+  }
+};
 
 onUpdated(onUpdatedHandler);
 onMounted(onMountedHandler);

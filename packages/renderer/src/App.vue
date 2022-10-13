@@ -15,17 +15,11 @@ import ErrorMessage from './components/ErrorMessage.vue';
 import { ipcRenderer } from 'electron';
 import path from 'path';
 
+import type { Vector3 } from '@babylonjs/core/Maths/math.vector';
+
 interface CameraPosition {
-  target: {
-    x: number;
-    y: number;
-    z: number;
-  }
-  position: {
-    x: number;
-    y: number;
-    z: number;
-  }
+  target: Vector3,
+  position: Vector3,
 }
 
 const activeTab = ref<string>('general');
@@ -62,14 +56,14 @@ const isProcessing = ref<boolean>(false);
 const inputFileSize = ref<number>(0);
 const outputFileSize = ref<number>(0);
 const cameraPosition = ref<CameraPosition | null>(null);
-const logs = ref([] as string[]);
-let errorMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+const logs = ref<string[]>([]);
+const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-function addLog(data: any): void {
+const addLog = (data: any) => {
   logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
-}
+};
 
-function drop(event: DragEvent): void {
+const drop = (event: DragEvent) => {
   event.preventDefault();
   event.stopPropagation();
 
@@ -91,13 +85,13 @@ function drop(event: DragEvent): void {
   }
 
   addLog('Added file: ' + inputFile.value?.path);
-}
+};
 
-function dragover(event: DragEvent): void {
+const dragover = (event: DragEvent) => {
   event.preventDefault();
-}
+};
 
-function doPack(): void {
+const doPack = () => {
   ipcRenderer.send('request-pack', {
     file: inputFile.value?.path,
     doDedupe: doDedupe.value,
@@ -131,49 +125,48 @@ function doPack(): void {
   outputFileSize.value = 0;
   isProcessing.value = true;
   // cameraPosition.value = null;
-  
+
   addLog('Requesting pack for ' + inputFile.value?.path);
-}
+};
 
-function updateCameraPosition(event: CameraPosition): void {
-  console.log('app.updateCameraPosition', event);
+const updateCameraPosition = (event: CameraPosition) => {
   cameraPosition.value = event;
-}
+};
 
-function onPackSuccess(event: Event, data: any): void {
+const onPackSuccess = (event: Event, data: any) => {
   isProcessing.value = false;
   outputFile.value = data.file;
   outputFileSize.value = data.file.binary.byteLength;
 
   addLog('Packing successful. Reduced file size by ' + (100 - (outputFileSize.value / inputFileSize.value) * 100).toFixed(2) + '%.');
-}
+};
 
-function onPackError(event: Event, data: any): void {
+const onPackError = (event: Event, data: any) => {
   errorMessage.value = data.error.message;
   isProcessing.value = false;
 
   addLog('Error: ' + data.error.message);
-}
+};
 
-function onPackSizeReport(event: Event, data: any): void {
+const onPackSizeReport = (event: Event, data: any) => {
   addLog(`Action ${data.action} reduced file size by ${(100 - (data.endSize / data.startSize) * 100).toFixed(2)}%.`);
-}
+};
 
-function onLoggingEvent(event: Event, data: any): void {
+const onLoggingEvent = (event: Event, data: any) => {
   addLog(`[${data.verbosity}] ${data.text}`);
-}
+};
 
-function errorWatcher(): void {
-  if (errorMessageTimeout) {
-    clearTimeout(errorMessageTimeout);
+const errorWatcher = () => {
+  if (errorMessageTimeout.value) {
+    clearTimeout(errorMessageTimeout.value);
   }
 
   if (errorMessage.value) {
-    errorMessageTimeout = setTimeout(() => {
+    errorMessageTimeout.value = setTimeout(() => {
       errorMessage.value = '';
     }, 5000);
   }
-}
+};
 
 watch(errorMessage, errorWatcher);
 
@@ -335,7 +328,7 @@ $font-size: 12px;
       margin-bottom: auto;
       display: flex;
       flex-direction: column;
-      font-size: $font-size;    
+      font-size: $font-size;
     }
 
     .bottom-options {

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ipcRenderer } from 'electron';
 
-function menuClose(): void {
+const menuClose = () => {
   ipcRenderer.send('menu-close');
-}
+};
 
-function menuMinimize(): void {
+const menuMinimize = () => {
   ipcRenderer.send('menu-minimize');
-}
+};
 </script>
 
 <template>

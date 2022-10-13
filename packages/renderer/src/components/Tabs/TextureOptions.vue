@@ -2,35 +2,35 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const doBasis: Ref<boolean> = inject('doBasis')!;
-const resamplingFilter: Ref<string> = inject('resamplingFilter')!;
-const textureResolutionWidth: Ref<number> = inject('textureResolutionWidth')!;
-const textureResolutionHeight: Ref<number> = inject('textureResolutionHeight')!;
-const doResize: Ref<boolean> = inject('doResize')!;
-const basisMethod: Ref<string> = inject('basisMethod')!;
-const pngFormatFilter: Ref<string> = inject('pngFormatFilter')!;
-const etc1sQuality: Ref<number> = inject('etc1sQuality')!;
-const etc1sResizeNPOT: Ref<boolean> = inject('etc1sResizeNPOT')!;
-const uastcLevel: Ref<number> = inject('uastcLevel')!;
-const uastcResizeNPOT: Ref<boolean> = inject('uastcResizeNPOT')!;
+const doBasis = inject('doBasis') as Ref<boolean>;
+const resamplingFilter = inject('resamplingFilter') as Ref<string>;
+const textureResolutionWidth = inject('textureResolutionWidth') as Ref<number>;
+const textureResolutionHeight = inject('textureResolutionHeight') as Ref<number>;
+const doResize = inject('doResize') as Ref<boolean>;
+const basisMethod = inject('basisMethod') as Ref<string>;
+const pngFormatFilter = inject('pngFormatFilter') as Ref<string>;
+const etc1sQuality = inject('etc1sQuality') as Ref<number>;
+const etc1sResizeNPOT = inject('etc1sResizeNPOT') as Ref<boolean>;
+const uastcLevel = inject('uastcLevel') as Ref<number>;
+const uastcResizeNPOT = inject('uastcResizeNPOT') as Ref<boolean>;
 
-function updateBasisMethod(method: string): void {
+const updateBasisMethod = (method: string) => {
   if (doBasis.value === true) {
     basisMethod.value = method;
   }
-}
+};
 
-function updateResamplingFilter(value: string): void {
+const updateResamplingFilter = (value: string) => {
   if (doBasis.value === true) {
     resamplingFilter.value = value;
   }
-}
+};
 
-function updatePNGFormatFilter(value: string): void {
+const updatePNGFormatFilter = (value: string) => {
   if (doBasis.value === true) {
     pngFormatFilter.value = value;
   }
-}
+};
 </script>
 
 <template>

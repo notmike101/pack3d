@@ -14,9 +14,11 @@ import { Logger, Verbosity } from './Logger';
 import { waitExit, reportSize, createParams } from './utils';
 import { ktx2Path, MICROMATCH_OPTIONS } from './constants';
 
+import type { Document } from '@gltf-transform/core';
+
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
 
-async function doDedupe(document, documentBinary, fileName, appendString = '') {
+const doDedupe = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   await document.transform(dedup());
@@ -27,9 +29,9 @@ async function doDedupe(document, documentBinary, fileName, appendString = '') {
   reportSize('dedupe', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doInstancing(document, documentBinary, fileName, appendString = '') {
+const doInstancing = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
       
   await document.transform(instance());
@@ -40,9 +42,9 @@ async function doInstancing(document, documentBinary, fileName, appendString = '
   reportSize('instance', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doReorder(document, documentBinary, fileName, appendString = '') {
+const doReorder = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   await document.transform(reorder({
@@ -55,9 +57,9 @@ async function doReorder(document, documentBinary, fileName, appendString = '') 
   reportSize('reorder', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doWeld(document, documentBinary, fileName, appendString = '') {
+const doWeld = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   await document.transform(weld());
@@ -68,15 +70,16 @@ async function doWeld(document, documentBinary, fileName, appendString = '') {
   reportSize('weld', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doResize(document, documentBinary, options, fileName, appendString = '') {
+const doResize = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   await document.transform(textureResize({
     size: [options.textureResolutionWidth, options.textureResolutionHeight],
     filter: options.resamplingFilter,
   }));
+
   documentBinary = await io.writeBinary(document);
 
   const endSize = documentBinary.byteLength;
@@ -84,16 +87,15 @@ async function doResize(document, documentBinary, options, fileName, appendStrin
   reportSize('resize', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doBasis(document, documentBinary, options, fileName, logger, appendString = '') {
+const doBasis = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, logger: Logger, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   documentBinary = await io.writeBinary(document);
 
   if (options.basisMethod === 'png') {
     const formats = micromatch.makeRe(String(options.pngFormatFilter), MICROMATCH_OPTIONS);
-    const slots = micromatch.makeRe(String(options.slots), MICROMATCH_OPTIONS);
 
     await document.transform(oxipng({ formats, squoosh }));
   } else {
@@ -176,7 +178,7 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
         numCompressed++;
       }
 
-      const outBytes = texture.getImage().byteLength;
+      const outBytes = texture?.getImage()?.byteLength ?? 0;
 
       logger.debug(`${prefix}: ${inBytes} -> ${outBytes} bytes`);
     });
@@ -202,9 +204,9 @@ async function doBasis(document, documentBinary, options, fileName, logger, appe
   reportSize('basis', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doDraco(document, documentBinary, options, fileName, appendString = '') {
+const doDraco = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   io.registerDependencies({
@@ -213,20 +215,20 @@ async function doDraco(document, documentBinary, options, fileName, appendString
   });
 
   document.createExtension(DracoMeshCompression)
-        .setRequired(true)
-        .setEncoderOptions({
-          decodeSpeed: options.decodeSpeed,
-          encodeSpeed: options.encodeSpeed,
-          method: options.vertexCompressionMethod,
-          quantizationVolume: options.quantizationVolume,
-          quantizationBits: {
-            POSITION: options.quantizationPosition,
-            NORMAL: options.quantizationNormal,
-            COLOR: options.quantizationColor,
-            TEX_COORD: options.quantizationTexCoord,
-            GENERIC: options.quantizationGeneric,
-          }
-        });
+    .setRequired(true)
+    .setEncoderOptions({
+      decodeSpeed: options.decodeSpeed,
+      encodeSpeed: options.encodeSpeed,
+      method: options.vertexCompressionMethod,
+      quantizationVolume: options.quantizationVolume,
+      quantizationBits: {
+        POSITION: options.quantizationPosition,
+        NORMAL: options.quantizationNormal,
+        COLOR: options.quantizationColor,
+        TEX_COORD: options.quantizationTexCoord,
+        GENERIC: options.quantizationGeneric,
+      }
+    });
 
   documentBinary = await io.writeBinary(document);
 
@@ -235,9 +237,9 @@ async function doDraco(document, documentBinary, options, fileName, appendString
   reportSize('draco', startSize, endSize);
 
   return fileName + appendString;
-}
+};
 
-async function doPack(filePath, outputPath, options: { [key: string]: any } = {}) {  
+const doPack = async (filePath: string, outputPath: string, options: { [key: string]: any } = {}) => {  
   try {
     if (!filePath) throw new Error('No file path specified');
     if (!outputPath) throw new Error('No output path specified');
@@ -247,7 +249,7 @@ async function doPack(filePath, outputPath, options: { [key: string]: any } = {}
     let documentBinary = await io.writeBinary(document);
     const extension = filePathInfo.ext;
     let outFileName = filePathInfo.name;
-    const logger: Logger = new Logger(Verbosity.DEBUG);
+    const logger = new Logger(Verbosity.DEBUG);
 
     document.setLogger((logger as any));
 
@@ -298,9 +300,9 @@ async function doPack(filePath, outputPath, options: { [key: string]: any } = {}
 
     return err;
   }
-}
+};
 
-async function main() {
+const main = async () => {
   const data = workerData;
   const startTime = performance.now();
 
@@ -332,19 +334,21 @@ async function main() {
     uastcResizeNPOT: data.uastcResizeNPOT,
   });
 
-  if (output instanceof Error) {
-    parentPort!.postMessage({
-      type: 'errorreport',
-      error: output,
-      errorMessage: output.message,
-      time: performance.now() - startTime,
-    });
-  } else {
-    parentPort!.postMessage({
-      type: 'packreport',
-      file: output,
-      time: performance.now() - startTime,
-    });
+  if (parentPort) {
+    if (output instanceof Error) {
+      parentPort.postMessage({
+        type: 'errorreport',
+        error: output,
+        errorMessage: output.message,
+        time: performance.now() - startTime,
+      });
+    } else {
+      parentPort.postMessage({
+        type: 'packreport',
+        file: output,
+        time: performance.now() - startTime,
+      });
+    }
   }
 
   process.exit(0);

@@ -2,7 +2,7 @@ import { parentPort } from 'worker_threads';
 import micromatch from 'micromatch';
 import { GLOBAL_DEFAULTS, UASTC_DEFAULTS, ETC1S_DEFAULTS, Mode, MICROMATCH_OPTIONS, R, G } from './constants';
 
-export async function waitExit(process) {
+export const waitExit = async (process) => {
   let stdout = '';
   let stderr = '';
 
@@ -18,55 +18,58 @@ export async function waitExit(process) {
     }
   }
 
-  const status = await new Promise((resolve, _) => {
+  const status = await new Promise((resolve) => {
     process.on('close', resolve);
   });
 
   return [status, stdout, stderr];
-}
+};
 
-export function reportSize(action, startSize, endSize) {
-  parentPort!.postMessage({
+export const reportSize = (action: string, startSize: number, endSize: number) => {
+  if (!parentPort) return;
+
+  parentPort.postMessage({
     type: 'sizereport',
     action,
     startSize,
     endSize,
   });
-}
+};
 
-export function isPowerOfTwo(value) {
+export const isPowerOfTwo = (value: number) => {
   if (value <= 2) return true;
+
   return (value & (value - 1)) === 0 && value !== 0;
-}
+};
 
-export function isMultipleOfFour(value) {
+export const isMultipleOfFour = (value: number) => {
   return value % 4 === 0;
-}
+};
 
-export function ceilMultipleOfFour(value) {
+export const ceilMultipleOfFour = (value: number) => {
   if (value <= 4) return 4;
   return value % 4 ? value + 4 - (value % 4) : value;
-}
+};
 
-export function preferredPowerOfTwo(value) {
+export const preferredPowerOfTwo = (value: number) => {
   if (value <= 4) return 4;
 
-  const lo = floorPowerOfTwo(value);
-  const hi = ceilPowerOfTwo(value);
+  const low = floorPowerOfTwo(value);
+  const high = ceilPowerOfTwo(value);
 
-  if (hi - value > value - lo) return lo;
-  return hi;
-}
+  if (high - value > value - low) return low;
+  return high;
+};
 
-export function floorPowerOfTwo(value) {
+export const floorPowerOfTwo = (value: number) => {
   return Math.pow(2, Math.floor(Math.log(value) / Math.LN2));
-}
+};
 
-export function ceilPowerOfTwo(value) {
+export const ceilPowerOfTwo = (value: number) => {
   return Math.pow(2, Math.ceil(Math.log(value) / Math.LN2));
-}
+};
 
-export function createParams(slots, channels, size, logger, numTextures, options) {
+export const createParams = (slots, channels, size, logger, numTextures, options) => {
   const params: string[] = [];
 
   params.push('--genmipmap');
@@ -171,7 +174,7 @@ export function createParams(slots, channels, size, logger, numTextures, options
   // }
 
   return params;
-}
+};
 
 export default {
   waitExit,

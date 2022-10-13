@@ -2,7 +2,7 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const errorMessage: Ref<string> = inject('errorMessage')!;
+const errorMessage = inject('errorMessage') as Ref<string>;
 </script>
 
 <template>
