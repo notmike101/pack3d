@@ -200,7 +200,7 @@ const addModelToScene = async (modelPath: string) => {
   assetContainer.addAllToScene();
 
   renderSemaphore.value += 1;
-  await waitFrames(30, scene.value as Scene);
+  await waitFrames(5, scene.value as Scene);
   renderSemaphore.value -= 1;
 };
 
@@ -287,7 +287,6 @@ const onMountedHandler = async () => {
   if (cameraPosition.value === null) {
     fitCameraToFrame();
   } else {
-    console.log('mounted setCameraPosition', cameraPosition.value);
     setCameraPosition(cameraPosition.value);
   }
 };
