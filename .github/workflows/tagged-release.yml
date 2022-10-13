@@ -2,8 +2,8 @@ name: Build and Publish
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -20,9 +20,9 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.2.3
-
-      - name: Install NPM packages
-        run: pnpm install
+        with:
+          version: latest
+          run_install: true
 
       - name: Prebuild
         run: pnpm run prebuild
@@ -37,8 +37,8 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: latest
-          prerelease: true
-          title: Development Build
+          prerelease: false
+          title: Tagged Release
           files: |
             LICENSE.txt
             release/*/*.exe
