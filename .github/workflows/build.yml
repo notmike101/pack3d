@@ -16,13 +16,16 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: 16.13
+          node-version: 16.16
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.2.3
 
       - name: Install NPM packages
-        run: npm install
+        run: pnpm install
 
       - name: Prebuild
-        run: npm run prebuild
+        run: pnpm run prebuild
 
       - name: Build With Electron-Builder
         uses: samuelmeuli/action-electron-builder@v1
