@@ -2,24 +2,24 @@
 import { inject } from 'vue';
 import type { Ref } from 'vue';
 
-const doDraco: Ref<boolean> = inject('doDraco')!;
-const vertexCompressionMethod: Ref<string> = inject('vertexCompressionMethod')!;
-const quantizationVolume: Ref<string> = inject('quantizationVolume')!;
-const quantizationColor: Ref<number> = inject('quantizationColor')!;
-const quantizationGeneric: Ref<number> = inject('quantizationGeneric')!;
-const quantizationNormal: Ref<number> = inject('quantizationNormal')!;
-const quantizationPosition: Ref<number> = inject('quantizationPosition')!;
-const quantizationTexcoord: Ref<number> = inject('quantizationTexcoord')!;
-const encodeSpeed: Ref<number> = inject('encodeSpeed')!;
-const decodeSpeed: Ref<number> = inject('decodeSpeed')!;
+const doDraco = inject('doDraco') as Ref<boolean>;
+const vertexCompressionMethod = inject('vertexCompressionMethod') as Ref<string>;
+const quantizationVolume = inject('quantizationVolume') as Ref<string>;
+const quantizationColor = inject('quantizationColor') as Ref<number>;
+const quantizationGeneric = inject('quantizationGeneric') as Ref<number>;
+const quantizationNormal = inject('quantizationNormal') as Ref<number>;
+const quantizationPosition = inject('quantizationPosition') as Ref<number>;
+const quantizationTexcoord = inject('quantizationTexcoord') as Ref<number>;
+const encodeSpeed = inject('encodeSpeed') as Ref<number>;
+const decodeSpeed = inject('decodeSpeed') as Ref<number>;
 
-const updateVertexCompressionMethod = (value: string): void => {
+const updateVertexCompressionMethod = (value: string) => {
   if (doDraco.value === true) {
     vertexCompressionMethod.value = value;
   }
 };
 
-const updateQuantizationVolume = (value: string): void => {
+const updateQuantizationVolume = (value: string) => {
   if (doDraco.value === true) {
     quantizationVolume.value = value;
   }

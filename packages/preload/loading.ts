@@ -3,7 +3,7 @@
  * (C) Copyright Michael Orozco 2022
  */
 
-export function useLoading() {
+export const useLoading = () => {
   const className = `loaders-css__square-spin`
   const styleContent = `
 @keyframes square-spin {
@@ -50,4 +50,4 @@ export function useLoading() {
       document.body.removeChild(oDiv)
     },
   }
-}
+};

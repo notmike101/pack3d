@@ -6,7 +6,7 @@ interface Props {
 
 const props: Props = defineProps<Props>();
 
-const formatBytes = (bytes: number): string => {
+const formatBytes = (bytes: number) => {
   if (bytes < 1024) return bytes + ' Bytes';
   if (bytes < 1048576) return (bytes / 1024).toFixed(3) + ' KB';
   if (bytes < 1073741824) return (bytes / 1048576).toFixed(3) + ' MB';

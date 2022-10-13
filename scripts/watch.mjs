@@ -10,7 +10,7 @@ import electron from 'electron';
 const query = new URLSearchParams(import.meta.url.split('?')[1]);
 const debug = query.has('debug');
 
-function watchWorker(server) {
+const watchWorker = (server) => {
   return build({
     configFile: 'packages/pack-worker/vite.config.ts',
     mode: 'development',
@@ -24,9 +24,9 @@ function watchWorker(server) {
       watch: true,
     },
   });
-}
+};
 
-function watchMain(server) {
+const watchMain = (server) => {
   let electronProcess = null;
   const address = server.httpServer.address();
   const env = {
@@ -54,9 +54,9 @@ function watchMain(server) {
       watch: true,
     },
   });
-}
+};
 
-function watchPreload(server) {
+const watchPreload = (server) => {
   return build({
     configFile: 'packages/preload/vite.config.ts',
     mode: 'development',
@@ -70,7 +70,7 @@ function watchPreload(server) {
       watch: true,
     },
   });
-}
+};
 
 const mainServer = await createServer({ configFile: 'packages/renderer/vite.config.ts' });
 

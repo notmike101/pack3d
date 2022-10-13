@@ -20,7 +20,7 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let mainWin: BrowserWindow | null = null;
 
-async function createWindow(): Promise<void> {
+const createWindow = () => {
   mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
@@ -42,17 +42,17 @@ async function createWindow(): Promise<void> {
   if (app.isPackaged) {
     mainWin.loadFile(path.join(__dirname, '../renderer/index.html'));
   } else {
-    const url: string = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
+    const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
 
     mainWin.loadURL(url);
     mainWin.webContents.openDevTools();
   }
 
-  mainWin.webContents.on('did-finish-load', (): void => {
+  mainWin.webContents.on('did-finish-load', () => {
     mainWin?.webContents.send('main-process-message', new Date().toLocaleString());
   });
 
-  mainWin.webContents.setWindowOpenHandler(({ url }: Electron.HandlerDetails) => {
+  mainWin.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https:')) {
       shell.openExternal(url);
     }
@@ -63,7 +63,7 @@ async function createWindow(): Promise<void> {
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', (): void => {
+app.on('window-all-closed', () => {
   mainWin = null;
 
   if (process.platform !== 'darwin') {
@@ -71,7 +71,7 @@ app.on('window-all-closed', (): void => {
   }
 })
 
-app.on('second-instance', (): void => {
+app.on('second-instance', () => {
   if (mainWin) {
     if (mainWin.isMinimized()) {
       mainWin.restore();
@@ -81,8 +81,8 @@ app.on('second-instance', (): void => {
   }
 });
 
-app.on('activate', (): void => {
-  const allWindows: BrowserWindow[] = BrowserWindow.getAllWindows();
+app.on('activate', () => {
+  const allWindows = BrowserWindow.getAllWindows();
 
   if (allWindows.length) {
     allWindows[0].focus();
@@ -91,11 +91,11 @@ app.on('activate', (): void => {
   }
 });
 
-ipcMain.on('request-pack', async (event, data): Promise<void> => {
-  const { sender }: Electron.IpcMainEvent = event;
-  const worker: Worker = new Worker(path.join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
+ipcMain.on('request-pack', (event: Electron.IpcMainEvent, data: any) => {
+  const { sender } = event;
+  const worker = new Worker(path.join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
 
-  worker.on('message', (result: any): void => {
+  worker.on('message', (result: any) => {
     if (result.type === 'logging') {
       sender.send('logging', result);
     } else if (result.type === 'errorreport') {
@@ -109,10 +109,10 @@ ipcMain.on('request-pack', async (event, data): Promise<void> => {
   });
 });
 
-ipcMain.on('menu-close', (): void => {
+ipcMain.on('menu-close', () => {
   mainWin?.close();
 });
 
-ipcMain.on('menu-minimize', (): void => {
+ipcMain.on('menu-minimize', () => {
   mainWin?.minimize();
 });

@@ -3,8 +3,8 @@
  * (C) Copyright Michael Orozco 2022
  */
 
-export function domReady(condition: DocumentReadyState[] = ['complete', 'interactive']) {
-  return new Promise(resolve => {
+export const domReady = (condition: DocumentReadyState[] = ['complete', 'interactive']) => {
+  return new Promise<boolean>((resolve) => {
     if (condition.includes(document.readyState)) {
       resolve(true)
     } else {
@@ -15,4 +15,4 @@ export function domReady(condition: DocumentReadyState[] = ['complete', 'interac
       })
     }
   })
-}
+};

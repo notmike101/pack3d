@@ -9,7 +9,7 @@ import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { ISceneLoaderPlugin, ISceneLoaderPluginAsync, SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
 import { BoundingInfo } from '@babylonjs/core/Culling/boundingInfo';
 import { AssetContainer } from '@babylonjs/core/assetContainer';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
@@ -21,16 +21,8 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
 
 interface CameraPosition {
-  target: {
-    x: number;
-    y: number;
-    z: number;
-  }
-  position: {
-    x: number;
-    y: number;
-    z: number;
-  }
+  target: Vector3;
+  position: Vector3;
 }
 
 interface Props {
@@ -40,23 +32,22 @@ interface Props {
 const props: Props = defineProps<Props>();
 const emit = defineEmits(['cameraMove']);
 
-const canvas: Ref<HTMLCanvasElement | null> = ref<HTMLCanvasElement | null>(null);
-const cameraPosition: Ref<CameraPosition | null> = inject('cameraPosition')!;
-
-let engine: Engine | null = null;
-let scene: Scene | null = null;
-let camera: ArcRotateCamera | null = null;
-let loadedModelPath: any = null;
-let renderNextFrame = 0;
-let renderSemaphore = 0;
-let activeEntity: AssetContainer | null = null;
-let savedCameraPosition: CameraPosition | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let isCanvasGrabbed = false;
+const canvas = ref<HTMLCanvasElement | null>(null);
+const cameraPosition = inject('cameraPosition') as Ref<CameraPosition | null>;
+const engine = ref<Engine | null>(null);
+const scene = ref<Scene | null>(null);
+const camera = ref<ArcRotateCamera | null>(null);
+const loadedModelPath = ref<string | null>(null);
+const renderNextFrame = ref<number>(0);
+const renderSemaphore = ref<number>(0);
+const activeEntity = ref<AssetContainer | null>(null);
+const savedCameraPosition = ref<CameraPosition | null>(null);
+const resizeObserver = ref<ResizeObserver | null>(null);
+const isCanvasGrabbed = ref<boolean>(false);
 
 GLTFFileLoader.IncrementalLoading = false;
 
-SceneLoader.OnPluginActivatedObservable.add((loader: ISceneLoaderPluginAsync | ISceneLoaderPlugin): void => {
+SceneLoader.OnPluginActivatedObservable.add((loader) => {
   if (loader.name === 'gltf') {
     (loader as GLTFFileLoader).animationStartMode = 0;
   }
@@ -81,67 +72,61 @@ KhronosTextureContainer2.URLConfig = {
   wasmZSTDDecoder: null,
 };
 
-const pointerUpEventHandler = (): void => {
-  isCanvasGrabbed = false;
-  renderSemaphore -= 1;
+const pointerUpEventHandler = () => {
+  isCanvasGrabbed.value = false;
+  renderSemaphore.value -= 1;
 
-  if (!camera!.position.equals(savedCameraPosition!.position as Vector3) || !camera!.target.equals(savedCameraPosition!.target as Vector3)) {
-    emitCameraPosition();
+  if (camera.value && savedCameraPosition.value) {
+    if (!camera.value.position.equals(savedCameraPosition.value.position) || !camera.value.target.equals(savedCameraPosition.value.target)) {
+      emitCameraPosition();
+    }
   }
 };
 
-const pointerDownEventHandler = (): void => {
-  isCanvasGrabbed = true;
-  renderSemaphore += 1;
+const pointerDownEventHandler = () => {
+  isCanvasGrabbed.value = true;
+  renderSemaphore.value += 1;
 
-  if (!camera) return;
-
-  savedCameraPosition = {
-    position: camera.position,
-    target: camera.target,
-  };
+  if (camera.value) {
+    savedCameraPosition.value = {
+      position: camera.value.position.clone(),
+      target: camera.value.target.clone(),
+    };
+  }
 };
 
-const pointerMoveEventHandler = (): void => {
-  if (isCanvasGrabbed === false) return;
+const pointerMoveEventHandler = () => {
+  if (isCanvasGrabbed.value === false) return;
 
-  renderNextFrame += 1;
+  renderNextFrame.value += 1;
 
   emitCameraPosition();
 };
 
-const wheelEventHandler = (): void => {
-  renderNextFrame += 1;
+const wheelEventHandler = () => {
+  renderNextFrame.value += 1;
 
   emitCameraPosition();
 };
 
-const emitCameraPosition = (): void => {
-  if (!camera) return;
+const emitCameraPosition = () => {
+  if (!camera.value) return;
 
   const newCameraPosition: CameraPosition = {
-    position: {
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z,
-    },
-    target: {
-      x: camera.target.x,
-      y: camera.target.y,
-      z: camera.target.z,
-    },
+    position: camera.value.position.clone(),
+    target: camera.value.target.clone(),
   };
 
   emit('cameraMove', newCameraPosition);
 };
 
-const getBoundingInfo = (mesh: AbstractMesh | Mesh): BoundingInfo => {
-  const childMeshes: AbstractMesh[] = mesh.getChildMeshes();
-  const min: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
-  const max: Vector3 = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
+const getBoundingInfo = (mesh: AbstractMesh | Mesh) => {
+  const childMeshes = mesh.getChildMeshes();
+  const min = childMeshes[0].getBoundingInfo().boundingBox.minimumWorld;
+  const max = childMeshes[0].getBoundingInfo().boundingBox.maximumWorld;
 
-  childMeshes.forEach((childMesh: AbstractMesh) => {
-    const { boundingBox }: BoundingInfo = childMesh.getBoundingInfo();
+  childMeshes.forEach((childMesh) => {
+    const { boundingBox } = childMesh.getBoundingInfo();
 
     min.minimizeInPlace(boundingBox.minimumWorld);
     max.maximizeInPlace(boundingBox.maximumWorld);
@@ -150,125 +135,116 @@ const getBoundingInfo = (mesh: AbstractMesh | Mesh): BoundingInfo => {
   return new BoundingInfo(min, max);
 };
 
-const createEnvironment = (): void => {
-  if (engine) {
-    engine.dispose();
+const createEnvironment = () => {
+  if (engine.value) {
+    engine.value.dispose();
   }
 
-  engine = new Engine(canvas.value);
-  scene = new Scene(engine);
+  engine.value = new Engine(canvas.value);
+  scene.value = new Scene(engine.value as Engine);
 
-  scene.createDefaultEnvironment();
+  scene.value.createDefaultEnvironment({
+    createGround: false,
+  });
 
-  // scene.createDefaultLight();
-  // scene.createDefaultSkybox();
+  camera.value = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene.value as Scene);
 
-  camera = new ArcRotateCamera('camera', 0, 1, 2, Vector3.Zero(), scene);
+  engine.value.inputElement = canvas.value;
 
-  engine.inputElement = canvas.value;
+  camera.value.allowUpsideDown = false;
+  camera.value.minZ = 0.1;
+  camera.value.lowerRadiusLimit = 1;
+  camera.value.fov = 0.767945;
+  camera.value.inertia = 0,
+  camera.value.panningInertia = 0;
 
-  camera.allowUpsideDown = false;
-  camera.minZ = 0.1;
-  camera.lowerRadiusLimit = 1;
-  camera.fov = 0.767945;
-  camera.inertia = 0,
-  camera.panningInertia = 0;
+  camera.value.attachControl(false);
 
-  camera.attachControl(false);
+  scene.value.onPointerObservable.add(pointerObservable);
 
-  scene.onPointerObservable.add(pointerObservable);
+  engine.value.runRenderLoop(engineRenderLoop);
 
-  engine.runRenderLoop(engineRenderLoop);
-
-  renderNextFrame += 1;
+  renderNextFrame.value += 1;
 };
 
-const fitCameraToFrame = (): void => {
-  if (activeEntity === null) return;
-  if (!camera) return;
+const fitCameraToFrame = () => {
+  if (activeEntity.value === null) return;
+  if (!camera.value) return;
 
-  const { boundingBox, boundingSphere }: BoundingInfo = getBoundingInfo(activeEntity.createRootMesh());
+  const { boundingBox, boundingSphere } = getBoundingInfo(activeEntity.value.createRootMesh());
 
   const newCameraPosition: CameraPosition = {
-    position: {
-      x: boundingBox.centerWorld.x,
-      y: boundingBox.centerWorld.y,
-      z: boundingSphere.radiusWorld * 2,
-    },
-    target: {
-      x: boundingBox.centerWorld.x,
-      y: boundingBox.centerWorld.y,
-      z: boundingBox.centerWorld.z,
-    },
+    position: new Vector3(boundingBox.centerWorld.x, boundingBox.centerWorld.y, boundingSphere.radiusWorld * 2),
+    target: boundingBox.centerWorld.clone(),
   };
 
   setCameraPosition(newCameraPosition);
 
   emitCameraPosition();
 
-  renderNextFrame += 1;
+  renderNextFrame.value += 1;
 };
 
-const addModelToScene = async (modelPath: string): Promise<void> => {
-  if (activeEntity !== null) {
-    activeEntity.removeAllFromScene();
+const addModelToScene = async (modelPath: string) => {
+  if (activeEntity.value !== null) {
+    activeEntity.value.removeAllFromScene();
   }
 
-  renderSemaphore += 1;
+  renderSemaphore.value += 1;
 
-  const assetContainer: AssetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene);
+  const assetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene.value as Scene);
 
-  activeEntity = assetContainer;
-  loadedModelPath = modelPath;
+  activeEntity.value = assetContainer;
+  loadedModelPath.value = modelPath;
 
   assetContainer.addAllToScene();
 
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await new Promise<void>((resolve) => setTimeout(resolve, 250));
 
-  renderSemaphore -= 1;
+  renderSemaphore.value -= 1;
 };
 
-const engineRenderLoop = (): void => {
-  if (!scene) return;
+const engineRenderLoop = () => {
+  if (!scene.value) return;
 
-  if (renderNextFrame > 0 || renderSemaphore > 0) {
-    renderNextFrame = 0;
+  if (renderNextFrame.value > 0 || renderSemaphore.value > 0) {
+    renderNextFrame.value = 0;
 
-    scene.render();
+    scene.value.render();
   }
 };
 
-const setCameraPosition = (newCameraPosition: CameraPosition): void => {
-  if (!camera) return;
+const setCameraPosition = (newCameraPosition: CameraPosition) => {
+  if (!camera.value) return;
 
-  camera.position = new Vector3(newCameraPosition.position.x, newCameraPosition.position.y, newCameraPosition.position.z);
-  camera.target = new Vector3(newCameraPosition.target.x, newCameraPosition.target.y, newCameraPosition.target.z);
+  camera.value.position = newCameraPosition.position.clone();
+  camera.value.target = newCameraPosition.target.clone();
 
-  renderNextFrame += 1;
+  renderNextFrame.value += 1;
 };
 
-const resize = (): void => {
-  if (!engine || !canvas.value) return;
+const resize = () => {
+  if (!engine.value || !canvas.value) return;
 
-  const { parentElement }: HTMLElement = canvas.value;
+  const { parentElement } = canvas.value;
 
   if (parentElement) {
-    engine.setSize(0, 0);
+    engine.value.setSize(0, 0);
 
-    const { width, height }: DOMRect = parentElement.getBoundingClientRect();
+    const { width, height } = parentElement.getBoundingClientRect();
 
-    engine.setSize(width | 0, height | 0, true);
+    engine.value.setSize(width | 0, height | 0, true);
 
-    renderNextFrame += 1;
+    renderNextFrame.value += 1;
   }
 };
 
-const onUpdatedHandler = async (): Promise<void> => {
-  if (props.model?.path === loadedModelPath) return;
+const onUpdatedHandler = async () => {
+  if (props.model?.path === loadedModelPath.value) return;
 
   createEnvironment();
 
-  const replacingExistingModel: boolean = activeEntity !== null;
+  const replacingExistingModel = activeEntity.value !== null;
 
   await addModelToScene(props.model.path);
 
@@ -284,22 +260,22 @@ const pointerObservable = (pointerInfo: PointerInfo) => {
     pointerDownEventHandler();
   } else if (pointerInfo.type === PointerEventTypes.POINTERUP) {
     pointerUpEventHandler();
-  } else if (pointerInfo.type === PointerEventTypes.POINTERMOVE && isCanvasGrabbed === true) {
+  } else if (pointerInfo.type === PointerEventTypes.POINTERMOVE && isCanvasGrabbed.value === true) {
     pointerMoveEventHandler();
   } else if (pointerInfo.type === PointerEventTypes.POINTERWHEEL) {
     wheelEventHandler();
   }
 };
 
-const onMountedHandler = async (): Promise<void> => {
+const onMountedHandler = async () => {
   if (!canvas.value) return;
 
-  if (resizeObserver === null) {
-    resizeObserver = new ResizeObserver(resize);
+  if (resizeObserver.value === null) {
+    resizeObserver.value = new ResizeObserver(resize);
   }
 
   if (canvas.value.parentElement) {
-    resizeObserver.observe(canvas.value.parentElement);
+    resizeObserver.value.observe(canvas.value.parentElement);
   }
 
   createEnvironment();
@@ -316,20 +292,20 @@ const onMountedHandler = async (): Promise<void> => {
   }
 };
 
-const cameraPositionWatcher = (newValue: CameraPosition | null): void => {
+const cameraPositionWatcher = (newValue: CameraPosition | null) => {
   if (!newValue) return;
 
   setCameraPosition(newValue);
 };
 
-const onUnmountedHandler = (): void => {
-  if (engine) {
-    engine.dispose();
+const onUnmountedHandler = () => {
+  if (engine.value) {
+    engine.value.dispose();
   }
 
-  if (canvas.value?.parentElement && resizeObserver !== null) {
-    resizeObserver.unobserve(canvas.value.parentElement);
-    resizeObserver = null;
+  if (canvas.value?.parentElement && resizeObserver.value !== null) {
+    resizeObserver.value.unobserve(canvas.value.parentElement);
+    resizeObserver.value = null;
   }
 };
 

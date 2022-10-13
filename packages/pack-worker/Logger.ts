@@ -9,8 +9,6 @@ export const Verbosity = {
 };
 
 export class Logger {
-  // private verbosity: number;
-
   static Verbosity = Verbosity;
 
   public static DEFAULT_INSTANCE = new Logger(Logger.Verbosity.INFO);
@@ -19,43 +17,37 @@ export class Logger {
     this.verbosity = verbosity;
   }
 
-  debug(text): void {
+  private postMessage(text: string) {
+    if (!parentPort) return;
+
+    parentPort.postMessage({
+      type: 'logging',
+      verbosity: this.verbosity,
+      text,
+    });
+  }
+
+  public debug(text: string) {
     if (this.verbosity <= Logger.Verbosity.DEBUG) {
-      parentPort!.postMessage({
-        type: 'logging',
-        verbosity: this.verbosity,
-        text,
-      });
+      this.postMessage(text);
     }
   }
 
-  info(text): void {
+  public info(text: string) {
     if (this.verbosity <= Logger.Verbosity.INFO) {
-      parentPort!.postMessage({
-        type: 'logging',
-        verbosity: this.verbosity,
-        text,
-      });
+      this.postMessage(text);
     }
   }
 
-  warn(text): void {
+  public warn(text: string) {
     if (this.verbosity <= Logger.Verbosity.WARN) {
-      parentPort!.postMessage({
-        type: 'logging',
-        verbosity: this.verbosity,
-        text,
-      });
+      this.postMessage(text);
     }
   }
 
-  error(text): void {
+  public error(text: string) {
     if (this.verbosity <= Logger.Verbosity.ERROR) {
-      parentPort!.postMessage({
-        type: 'logging',
-        verbosity: this.verbosity,
-        text,
-      });
+      this.postMessage(text);
     }
   }
 }

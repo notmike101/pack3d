@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { inject, ref } from 'vue';
 import type { Ref } from 'vue';
 
-const activeTab: Ref<string> = inject('activeTab')!;
-const tabs: string[] = ['General', 'Texture', 'Vertex'];
+const activeTab = inject('activeTab') as Ref<string>;
+const tabs = ref<string[]>(['General', 'Texture', 'Vertex']);
 
-const switchTab = (tabIdentifier: string): void => {
+const switchTab = (tabIdentifier: string) => {
   activeTab.value = tabIdentifier.toLowerCase();
 };
 </script>
