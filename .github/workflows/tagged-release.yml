@@ -24,9 +24,6 @@ jobs:
           version: latest
           run_install: true
 
-      - name: Prebuild
-        run: pnpm run prebuild
-
       - name: Build With Electron-Builder
         uses: samuelmeuli/action-electron-builder@v1
         with:
@@ -41,5 +38,5 @@ jobs:
           title: Tagged Release
           files: |
             LICENSE.txt
-            release/*/*.exe
-            release/*/*.msi
+            release/*/Pack3D.exe
+            release/*/Pack3D.msi

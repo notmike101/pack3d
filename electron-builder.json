@@ -10,10 +10,8 @@
     "dist"
   ],
   "mac": {
-    "artifactName": "${productName}_${version}.${ext}",
-    "target": [
-      "dmg"
-    ]
+    "target": "dmg",
+    "artifactName": "${productName}.${ext}"
   },
   "win": {
     "target": [
@@ -31,7 +29,7 @@
       }
     ],
     "icon": "./logo.ico",
-    "artifactName": "${productName}_${version}.${ext}"
+    "artifactName": "${productName}.${ext}"
   },
   "nsis": {
     "oneClick": false,
@@ -41,11 +39,9 @@
     "installerIcon": "./logo.ico"
   },
   "extraFiles": [
-    "./ktx.dll",
-    "./ktx2check.exe",
-    "./ktx2ktx2.exe",
-    "./ktxinfo.exe",
-    "./ktxsc.exe",
-    "./toktx.exe"
+    {
+      "from": "./redist_bins",
+      "to": "./"
+    }
   ]
 }
