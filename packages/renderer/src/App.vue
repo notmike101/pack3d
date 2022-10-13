@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import './styles.scss';
-
 import { ref, watch, provide } from 'vue'
 import BabylonScene from './components/BabylonScene.vue';
 import TitleBar from './components/TitleBar.vue';
@@ -58,6 +56,12 @@ const outputFileSize = ref<number>(0);
 const cameraPosition = ref<CameraPosition | null>(null);
 const logs = ref<string[]>([]);
 const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+const tabMap = {
+  'general': GeneralOptions,
+  'texture': TextureOptions,
+  'vertex': VertexCompressionOptions,
+};
 
 const addLog = (data: any) => {
   logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
@@ -124,7 +128,6 @@ const doPack = () => {
 
   outputFileSize.value = 0;
   isProcessing.value = true;
-  // cameraPosition.value = null;
 
   addLog('Requesting pack for ' + inputFile.value?.path);
 };
@@ -220,38 +223,34 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
 </script>
 
 <template>
-  <div class="wrapper" @drop="drop" @dragover="dragover" style="flex-direction: column;">
+  <div @drop="drop" @dragover="dragover" class="flex flex-col flex-1 select-none overflow-hidden flex-wrap">
     <TitleBar />
-    <div class="wrapper">
-      <aside v-if="inputFile">
-        <h1 class="file-name">Options</h1>
+    <div class="flex flex-row flex-1 select-none overflow-hidden flex-wrap">
+      <aside v-if="inputFile" class="basis-[250px] bg-[#ecf0f1] break-words text-left flex flex-col p-0 max-h-full">
         <Tabs />
-        <div class="top-options">
-          <GeneralOptions v-if="activeTab === 'general'" />
-          <TextureOptions v-if="activeTab === 'texture'" />
-          <VertexCompressionOptions v-if="activeTab === 'vertex'" />
+        <div class="mb-auto flex flex-col">
+          <component :is="tabMap[activeTab]" />
         </div>
-        <div class="bottom-options">
-          <button class="do-pack-button" :class="{ disabled: isProcessing === true }" @click="doPack">
-            <span v-if="isProcessing === false">Pack</span>
-            <span v-if="isProcessing === true">Processing...</span>
+        <div class="mt-auto flex flex-col border-t border-t-black">
+          <button class="mt-auto w-full border-0 bg-[#3498db] text-white px-0 py-[10px] cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': isProcessing === true }" @click="doPack">
+            <span>{{ isProcessing ? 'Packing...' : 'Pack' }}</span>
           </button>
         </div>
       </aside>
-      <main v-if="inputFile">
-        <div style="display: flex; flex-direction: column;flex: 1;">
-          <div style="display: flex; flex-direction: row;flex: 1;overflow: hidden;">
-            <div class="canvas-container">
+      <main v-if="inputFile" class="flex flex-row flex-1 overflow-hidden max-h-full">
+        <div class="flex flex-col flex-1">
+          <div class="flex flex-row flex-1 overflow-hidden">
+            <div class="flex flex-1 flex-col relative overflow-hidden max-w-full max-h-full first-of-type:border-r first-of-type:border-r-[#bdc3c7]">
               <BabylonScene :model="inputFile" @camera-move="updateCameraPosition" />
               <FileInfo :name="inputFile.name" :size="inputFileSize" />
             </div>
-            <div v-if="outputFile" class="canvas-container">
+            <div v-if="outputFile" class="flex flex-1 flex-col relative overflow-hidden max-w-full max-h-full first-of-type:border-r first-of-type:border-r-[#bdc3c7]">
               <template v-if="isProcessing === false">
                 <BabylonScene v-if="outputFile" :model="outputFile" @camera-move="updateCameraPosition" />
                 <FileInfo :name="outputFile.name" :size="outputFileSize" />
               </template>
               <template v-if="isProcessing === true">
-                <p style="margin: auto;display: flex;flex: 1;align-items: center;justify-content: center;">Processing...</p>
+                <p class="m-auto flex flex-1 items-center justify-center">Processing...</p>
               </template>
             </div>
           </div>
@@ -263,150 +262,3 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
     </div>
   </div>
 </template>
-
-<style lang="scss">
-$general-font-size: 12px;
-
-body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  overflow: hidden;
-
-  #app {
-    font-family: Avenir, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: center;
-    color: #2c3e50;
-    height: 100%;
-    width: 100%;
-    display: flex;
-  }
-
-  @keyframes spinner {
-    0% {
-      transform: translate3d(-50%, -50%, 0) rotate(0deg);
-    }
-    100% {
-      transform: translate3d(-50%, -50%, 0) rotate(360deg);
-    }
-  }
-}
-</style>
-
-<style lang="scss" scoped>
-$font-size: 12px;
-
-.wrapper {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  user-select: none;
-  overflow: hidden;
-  flex-wrap: wrap;
-
-  aside {
-    flex: 0 0 250px;
-    background-color: #ecf0f1;
-    word-break: break-word;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    padding: 0 1px;
-    max-height: 100%;
-
-    h1 {
-      margin: 0;
-      padding: 4px 0 2px 0;
-      text-align: center;
-      font-size: $font-size;
-      background-color: transparent;
-    }
-
-    .top-options {
-      margin-bottom: auto;
-      display: flex;
-      flex-direction: column;
-      font-size: $font-size;
-    }
-
-    .bottom-options {
-      margin-top: auto;
-      display: flex;
-      flex-direction: column;
-      border-top: 1px solid black;
-    }
-
-    .do-pack-button {
-      margin-top: auto;
-      width: 100%;
-      border: 0 ;
-      background-color: #3498db;
-      color: #fefefe;
-      padding: 10px 0;
-      font-size: $font-size;
-      cursor: pointer;
-
-      &.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
-      }
-    }
-  }
-
-  main {
-    display: flex;
-    flex: 1;
-    flex-direction: row;
-    overflow: hidden;
-    max-height: 100%;
-
-    .action-needed-notice {
-      margin: auto;
-      font-size: 1.5em;
-      font-weight: bold;
-    }
-
-    .canvas-container {
-      flex: 1;
-      // flex: 0 0 50%;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      max-width: 100%;
-      max-height: 100%;
-
-      &:first-of-type {
-        border-right: 1px solid #bdc3c7;
-      }
-
-      .spinner {
-        &::before {
-          animation: 1.5s linear infinite spinner;
-          animation-play-state: inherit;
-          border: solid 5px #cfd0d1;
-          border-bottom-color: #1c87c9;
-          border-radius: 50%;
-          content: "";
-          height: 40px;
-          width: 40px;
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%,);
-          will-change: transform;
-        }
-      }
-
-      canvas {
-        outline: none;
-        user-select: none;
-        -webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
-      }
-    }
-  }
-}
-</style>

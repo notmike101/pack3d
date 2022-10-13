@@ -315,14 +315,5 @@ watch(cameraPosition, cameraPositionWatcher);
 </script>
 
 <template>
-  <canvas ref="canvas"></canvas>
+  <canvas ref="canvas" class="cursor-grab h-full w-full aspect-[unset] outline-none select-none"></canvas>
 </template>
-
-<style lang="scss" scoped>
-canvas {
-  cursor: grab;
-  height: 100%;
-  width: 100%;
-  aspect-ratio: unset;
-}
-</style>

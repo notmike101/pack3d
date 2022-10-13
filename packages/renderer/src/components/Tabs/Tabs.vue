@@ -11,54 +11,15 @@ const switchTab = (tabIdentifier: string) => {
 </script>
 
 <template>
-  <div class="tabs">
+  <div class="flex flex-row items-center">
     <div
       v-for="(tab, index) in tabs"
       :key="index"
-      class="tab"
-      :class="{ active: activeTab === tab.toLowerCase() }"
+      class="flex border border-[#cacaca] flex-1 items-center justify-center text-[rgb(170, 170, 170)] cursor-pointer"
+      :class="{ 'bg-[#2c3e50] text-white border-[#2c3e50] relative after:absolute after:top-[-3px] after:bg-[#2c3e50] after:h-[2px] after:w-[calc(100% + 2px)] after:left-[-1px] after:rounded-t-sm': activeTab === tab.toLowerCase() }"
       @click="switchTab(tab)"
     >
       {{ tab }}
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-$font-size: 12px;
-
-.tabs {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  
-  .tab {
-    display: flex;
-    border: 1px solid #cacaca;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    color:rgb(170, 170, 170);
-    cursor: pointer;
-    font-size: $font-size;
-
-    &.active {
-      background-color: #2c3e50;
-      color: white;
-      border: 1px solid #2c3e50;
-      position: relative;
-
-      &:after {
-        position: absolute;
-        top: -3px;
-        background-color: #2c3e50;
-        content: ' ';
-        height: 2px;
-        width: calc(100% + 2px);
-        left: -1px;
-        border-radius: 5px 5px 0 0;
-      }
-    }
-  }
-}
-</style>

@@ -1,13 +1,5 @@
 <template>
-  <main>
-    <p class="drop-notice">Drop File Into Window To Begin Editing</p>
+  <main class="w-full h-full flex">
+    <p class="m-auto text-2xl font-bold">Drag A Model In To Begin Packing</p>
   </main>
 </template>
-
-<style lang="scss" scoped>
-.drop-notice {
-  margin: auto;
-  font-size: 2em;
-  font-weight: bold;
-}
-</style>
