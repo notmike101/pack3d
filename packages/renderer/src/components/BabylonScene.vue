@@ -15,10 +15,12 @@ import { AssetContainer } from '@babylonjs/core/assetContainer';
 import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
+import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
+import { waitFrames } from '../utils';
+
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Ref } from 'vue';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
 
 interface CameraPosition {
   target: Vector3;
@@ -190,8 +192,6 @@ const addModelToScene = async (modelPath: string) => {
     activeEntity.value.removeAllFromScene();
   }
 
-  renderSemaphore.value += 1;
-
   const assetContainer = await SceneLoader.LoadAssetContainerAsync(modelPath, undefined, scene.value as Scene);
 
   activeEntity.value = assetContainer;
@@ -199,8 +199,8 @@ const addModelToScene = async (modelPath: string) => {
 
   assetContainer.addAllToScene();
 
-  await new Promise<void>((resolve) => setTimeout(resolve, 250));
-
+  renderSemaphore.value += 1;
+  await waitFrames(30, scene.value as Scene);
   renderSemaphore.value -= 1;
 };
 
