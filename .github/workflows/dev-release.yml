@@ -36,15 +36,4 @@ jobs:
         uses: samuelmeuli/action-electron-builder@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create a release
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest-dev
-          prerelease: true
-          title: Development Build
-          files: |
-            LICENSE.txt
-            release/Pack3D.exe
-            release/Pack3D.msi
+          release: true
