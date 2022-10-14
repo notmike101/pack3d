@@ -20,18 +20,15 @@
     "node": ">=14.17.0"
   },
   "dependencies": {
-    "@gltf-transform/core": "^2.4.4",
-    "@gltf-transform/extensions": "^2.4.4",
-    "@gltf-transform/functions": "^2.4.4",
     "@squoosh/lib": "^0.4.0",
-    "draco3dgltf": "^1.5.3",
-    "meshoptimizer": "^0.18.1",
-    "micromatch": "^4.0.5",
-    "tmp": "^0.2.1"
+    "draco3dgltf": "^1.5.3"
   },
   "devDependencies": {
     "@babylonjs/core": "^5.28.0",
     "@babylonjs/loaders": "^5.28.0",
+    "@gltf-transform/core": "^2.4.4",
+    "@gltf-transform/extensions": "^2.4.4",
+    "@gltf-transform/functions": "^2.4.4",
     "@lottiefiles/vue-lottie-player": "^1.0.9",
     "@types/micromatch": "^4.0.2",
     "@types/draco3dgltf": "^1.4.0",
@@ -41,8 +38,11 @@
     "autoprefixer": "^10.4.12",
     "electron": "^21.1.1",
     "electron-builder": "^23.6.0",
+    "meshoptimizer": "^0.18.1",
+    "micromatch": "^4.0.5",
     "postcss": "^8.4.18",
     "tailwindcss": "^3.1.8",
+    "tmp": "^0.2.1",
     "typescript": "^4.8.4",
     "vite": "^3.1.8",
     "vite-plugin-electron": "^0.10.1",
