@@ -15,7 +15,7 @@ const watchWorker = (server) => {
     configFile: 'packages/pack-worker/vite.config.ts',
     mode: 'development',
     plugins: [{
-      name: 'electron-preload-watcher',
+      name: 'electron-worker-watcher',
       writeBundle() {
         server.ws.send({ type: 'full-reload' });
       },
@@ -56,26 +56,9 @@ const watchMain = (server) => {
   });
 };
 
-const watchPreload = (server) => {
-  return build({
-    configFile: 'packages/preload/vite.config.ts',
-    mode: 'development',
-    plugins: [{
-      name: 'electron-preload-watcher',
-      writeBundle() {
-        server.ws.send({ type: 'full-reload' });
-      },
-    }],
-    build: {
-      watch: true,
-    },
-  });
-};
-
 const mainServer = await createServer({ configFile: 'packages/renderer/vite.config.ts' });
 
 await mainServer.listen(3344);
 
-await watchPreload(mainServer)
 await watchMain(mainServer)
 await watchWorker(mainServer);

@@ -16,26 +16,8 @@ const formatBytes = (bytes: number) => {
 </script>
 
 <template>
-  <div class="canvas-container-info">
-    <p>File Name: {{ props.name }}</p>
-    <p>File Size: {{ formatBytes(props.size) }}</p>
+  <div class="absolute bg-black/70 text-left p-[5px] text-white">
+    <p class="m-0 p-0">File Name: {{ props.name }}</p>
+    <p class="m-0 p-0">File Size: {{ formatBytes(props.size) }}</p>
   </div>
 </template>
-
-<style lang="scss" scoped>
-$font-size: 12px;
-
-.canvas-container-info {
-  position: absolute;
-  background-color: rgba(0, 0, 0, 0.7);
-  font-size: $font-size;
-  text-align: left;
-  padding: 5px;
-  color: white;
-
-  p {
-    margin: 0;
-    padding: 0;
-  }
-}
-</style>

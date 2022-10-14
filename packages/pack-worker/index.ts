@@ -16,7 +16,7 @@ import { ktx2Path, MICROMATCH_OPTIONS } from './constants';
 
 import type { Document } from '@gltf-transform/core';
 
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 const doDedupe = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
@@ -33,7 +33,7 @@ const doDedupe = async (document: Document, documentBinary: Uint8Array, fileName
 
 const doInstancing = async (document: Document, documentBinary: Uint8Array, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
-      
+
   await document.transform(instance());
   documentBinary = await io.writeBinary(document);
 
@@ -197,7 +197,7 @@ const doBasis = async (document: Document, documentBinary: Uint8Array, options: 
     }
   }
 
-  documentBinary = await io.writeBinary(document);  
+  documentBinary = await io.writeBinary(document);
 
   const endSize = documentBinary.byteLength;
 
@@ -239,7 +239,7 @@ const doDraco = async (document: Document, documentBinary: Uint8Array, options: 
   return fileName + appendString;
 };
 
-const doPack = async (filePath: string, outputPath: string, options: { [key: string]: any } = {}) => {  
+const doPack = async (filePath: string, outputPath: string, options: { [key: string]: any } = {}) => {
   try {
     if (!filePath) throw new Error('No file path specified');
     if (!outputPath) throw new Error('No output path specified');

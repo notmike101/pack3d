@@ -14,6 +14,9 @@ export default defineConfig({
     },
     minify: process.env.NODE_ENV === 'production',
     sourcemap: true,
+    commonjsOptions: {
+      ignoreDynamicRequires: true,
+    },
     rollupOptions: {
       external: [
         'electron',

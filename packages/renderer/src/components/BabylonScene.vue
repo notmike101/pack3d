@@ -57,20 +57,20 @@ SceneLoader.OnPluginActivatedObservable.add((loader) => {
 
 DracoCompression.Configuration = {
   decoder: {
-    wasmUrl: new URL('/wasm/draco/draco_decoder_gltf.js', import.meta.url).href,
-    wasmBinaryUrl: new URL('/wasm/draco/draco_decoder_gltf.wasm', import.meta.url).href,
-    fallbackUrl: new URL('/wasm/draco/draco_wasm_wrapper_gltf.js', import.meta.url).href,
+    wasmUrl: './wasm/draco/draco_decoder_gltf.js',
+    wasmBinaryUrl: './wasm/draco/draco_decoder_gltf.wasm',
+    fallbackUrl: './wasm/draco/draco_wasm_wrapper_gltf.js',
   },
 };
 
 KhronosTextureContainer2.URLConfig = {
-  jsDecoderModule: new URL('/wasm/ktx2/ktx2Decoder.js', import.meta.url).href,
-  jsMSCTranscoder: new URL('/wasm/basis/msc_basis_transcoder.js', import.meta.url).href,
-  wasmMSCTranscoder: new URL('/wasm/basis/msc_basis_transcoder.wasm', import.meta.url).href,
+  jsDecoderModule: './wasm/ktx2/ktx2Decoder.js',
+  jsMSCTranscoder: './wasm/basis/msc_basis_transcoder.js',
+  wasmMSCTranscoder: './wasm/basis/msc_basis_transcoder.wasm',
   wasmUASTCToASTC: null,
-  wasmUASTCToBC7: new URL('/wasm/ktx2/uastc_bc7.wasm', import.meta.url).href,
-  wasmUASTCToRGBA_SRGB: new URL('/wasm/ktx2/uastc_rgba_srgb.wasm', import.meta.url).href,
-  wasmUASTCToRGBA_UNORM: new URL('/wasm/ktx2/uastc_rgba32_unorm.wasm', import.meta.url).href,
+  wasmUASTCToBC7: './wasm/ktx2/uastc_bc7.wasm',
+  wasmUASTCToRGBA_SRGB: './wasm/ktx2/uastc_rgba_srgb.wasm',
+  wasmUASTCToRGBA_UNORM: './wasm/ktx2/uastc_rgba32_unorm.wasm',
   wasmZSTDDecoder: null,
 };
 
@@ -315,14 +315,5 @@ watch(cameraPosition, cameraPositionWatcher);
 </script>
 
 <template>
-  <canvas ref="canvas"></canvas>
+  <canvas ref="canvas" class="cursor-grab h-full w-full aspect-[unset] outline-none select-none"></canvas>
 </template>
-
-<style lang="scss" scoped>
-canvas {
-  cursor: grab;
-  height: 100%;
-  width: 100%;
-  aspect-ratio: unset;
-}
-</style>

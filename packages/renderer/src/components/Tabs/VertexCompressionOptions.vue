@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { inject } from 'vue';
+import InputGroup from '@/components/InputGroup.vue';
+import CheckboxInput from '@/components/Inputs/CheckboxInput.vue';
+import RadioInput from '@/components/Inputs/RadioInput.vue';
+import NumberInput from '@/components/Inputs/NumberInput.vue';
+
 import type { Ref } from 'vue';
 
 const doDraco = inject('doDraco') as Ref<boolean>;
@@ -12,88 +17,51 @@ const quantizationPosition = inject('quantizationPosition') as Ref<number>;
 const quantizationTexcoord = inject('quantizationTexcoord') as Ref<number>;
 const encodeSpeed = inject('encodeSpeed') as Ref<number>;
 const decodeSpeed = inject('decodeSpeed') as Ref<number>;
-
-const updateVertexCompressionMethod = (value: string) => {
-  if (doDraco.value === true) {
-    vertexCompressionMethod.value = value;
-  }
-};
-
-const updateQuantizationVolume = (value: string) => {
-  if (doDraco.value === true) {
-    quantizationVolume.value = value;
-  }
-};
 </script>
 
 <template>
-  <fieldset>
-    <legend>Vertex Compression Options</legend>
-    <div class="input-group">
-      <label for="doDraco">Enable Draco</label>
-      <input type="checkbox" id="doDraco" v-model="doDraco" />
-    </div>
-    <div class="input-group">
-      <label for="vertexCompressionMethod">Method</label>
-      <div class="radio-select">
-        <div
-          v-for="(identifier, key) in ['edgebreaker', 'sequential']"
-          :key="key"
-          class="item"
-          :class="{ active: vertexCompressionMethod === identifier.toLowerCase(), disabled: doDraco === false }"
-          @click="updateVertexCompressionMethod(identifier.toLowerCase())"
-        >
-          {{ identifier }}
-        </div>
-      </div>
-    </div>
-    <fieldset>
-      <legend>Quantization</legend>
-      <div class="input-group">
-        <label for="quantizationVolume">Volume</label>
-        <div class="radio-select">
-          <div
-            v-for="(identifier, key) in ['Mesh', 'Scene']"
-            :key="key"
-            class="item"
-            :class="{ active: quantizationVolume === identifier.toLowerCase(), disabled: doDraco === false }"
-            @click="updateQuantizationVolume(identifier.toLowerCase())"
-          >
-            {{ identifier }}
-          </div>
-        </div>
-      </div>
-      <div class="input-group">
-        <label for="quantizationColor">Color Bits</label>
-        <input type="number" :disabled="doDraco === false" v-model="quantizationColor" id="quantizationColor">
-      </div>
-      <div class="input-group">
-        <label for="quantizationGeneric">Other Bits</label>
-        <input type="number" :disabled="doDraco === false" v-model="quantizationGeneric" id="quantizationGeneric">
-      </div>
-      <div class="input-group">
-        <label for="quantizationNormal">Normal Bits</label>
-        <input type="number" :disabled="doDraco === false" v-model="quantizationNormal" id="quantizationNormal">
-      </div>
-      <div class="input-group">
-        <label for="quantizationPosition">Position Bits</label>
-        <input type="number" :disabled="doDraco === false" v-model="quantizationPosition" id="quantizationPosition">
-      </div>
-      <div class="input-group">
-        <label for="quantizationTexcoord">Texcord Bits</label>
-        <input type="number" :disabled="doDraco === false" v-model="quantizationTexcoord" id="quantizationTexcoord">
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Speed</legend>
-      <div class="input-group">
-        <label for="encodeSpeed">Encode</label>
-        <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="encodeSpeed" id="encodeSpeed">
-      </div>
-      <div class="input-group">
-        <label for="decodeSpeed">Decode</label>
-        <input type="number" min="1" max="10" :disabled="doDraco === false" v-model="decodeSpeed" id="decodeSpeed">
-      </div>
-    </fieldset>
+  <fieldset class="p-[5px] m-[5px] relative border first-of-type:mt-[6px]">
+    <legend class="font-bold">Vertex Compression Options</legend>
+
+    <InputGroup identifier="doDraco" label="Enable Draco Compression">
+      <CheckboxInput identifier="doDraco" v-model="doDraco" />
+    </InputGroup>
+    <InputGroup label="Method" :disable-hover-pointer="true">
+      <RadioInput :options="['edgebreaker', 'sequential']" v-model="vertexCompressionMethod" :disable="doDraco === false" />
+    </InputGroup>
+  </fieldset>
+
+  <fieldset class="p-[5px] m-[5px] relative border first-of-type:mt-[6px]">
+    <legend class="font-bold">Quantization</legend>
+
+    <InputGroup identifier="quantizationVolume" label="Volume" :disable-hover-pointer="true">
+      <RadioInput :options="['mesh', 'scene']" v-model="quantizationVolume" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+    <InputGroup identifier="quantizationColor" label="Color Bits">
+      <NumberInput v-model="quantizationColor" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+    <InputGroup identifier="quantizationGeneric" label="Generic Bits">
+      <NumberInput v-model="quantizationGeneric" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+    <InputGroup identifier="quantizationNormal" label="Normal Bits">
+      <NumberInput v-model="quantizationNormal" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+    <InputGroup identifier="quantizationPosition" label="Position Bits">
+      <NumberInput v-model="quantizationPosition" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+    <InputGroup identifier="quantizationTexcord" label="Texcord Bits">
+      <NumberInput v-model="quantizationTexcoord" :disable="doDraco === false" :min="0" />
+    </InputGroup>
+  </fieldset>
+
+  <fieldset class="p-[5px] m-[5px] relative border first-of-type:mt-[6px]">
+    <legend class="font-bold">Speed</legend>
+
+    <InputGroup identifier="encodeSpeed" label="Encode">
+      <NumberInput identifier="encodeSpeed" v-model="encodeSpeed" :disable="doDraco === false" :min="1" :max="10" />
+    </InputGroup>
+    <InputGroup identifier="decodeSpeed" label="Decode">
+      <NumberInput identifier="decodeSpeed" v-model="decodeSpeed" :disable="doDraco === false" :min="1" :max="10" />
+    </InputGroup>
   </fieldset>
 </template>

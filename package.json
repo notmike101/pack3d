@@ -1,7 +1,7 @@
 {
   "name": "pack3d",
   "description": "Pack3D",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "dist/main/index.cjs",
   "author": "Mike Orozco <me@mikeorozco.dev>",
   "homepage": "https://github.com/notmike101/pack3d",
@@ -14,21 +14,38 @@
   "scripts": {
     "dev": "node scripts/watch.mjs",
     "prebuild": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
-    "build": "electron-builder"
+    "release": "npm run prebuild && electron-builder"
   },
   "engines": {
     "node": ">=14.17.0"
   },
+  "dependencies": {
+    "@squoosh/lib": "^0.4.0",
+    "draco3dgltf": "^1.5.3"
+  },
   "devDependencies": {
+    "@babylonjs/core": "^5.28.0",
+    "@babylonjs/loaders": "^5.28.0",
+    "@gltf-transform/core": "^2.4.4",
+    "@gltf-transform/extensions": "^2.4.4",
+    "@gltf-transform/functions": "^2.4.4",
+    "@lottiefiles/vue-lottie-player": "^1.0.9",
     "@types/micromatch": "^4.0.2",
+    "@types/draco3dgltf": "^1.4.0",
     "@types/node": "18.8.0",
+    "@types/tmp": "^0.2.3",
     "@vitejs/plugin-vue": "^3.1.2",
+    "autoprefixer": "^10.4.12",
     "electron": "^21.1.1",
     "electron-builder": "^23.6.0",
-    "sass": "^1.55.0",
+    "meshoptimizer": "^0.18.1",
+    "micromatch": "^4.0.5",
+    "postcss": "^8.4.18",
+    "tailwindcss": "^3.1.8",
+    "tmp": "^0.2.1",
     "typescript": "^4.8.4",
-    "vite": "^3.1.7",
-    "vite-plugin-electron": "^0.10.1",
+    "vite": "^3.1.8",
+    "vite-plugin-electron": "^0.9.3",
     "vite-plugin-electron-renderer": "^0.10.1",
     "vite-plugin-resolve": "^2.1.2",
     "vue": "^3.2.40",
@@ -39,20 +56,5 @@
     "VITE_DEV_SERVER_PORT": 3344,
     "VITE_WORKER_SERVER_HOST": "127.0.0.1",
     "VITE_WORKER_SERVER_PORT": 3345
-  },
-  "dependencies": {
-    "@babylonjs/core": "^5.27.1",
-    "@babylonjs/loaders": "^5.27.1",
-    "@gltf-transform/core": "^2.4.4",
-    "@gltf-transform/extensions": "^2.4.4",
-    "@gltf-transform/functions": "^2.4.4",
-    "@lottiefiles/vue-lottie-player": "^1.0.9",
-    "@squoosh/lib": "^0.4.0",
-    "@types/draco3dgltf": "^1.4.0",
-    "@types/tmp": "^0.2.3",
-    "draco3dgltf": "^1.5.3",
-    "meshoptimizer": "^0.18.1",
-    "micromatch": "^4.0.5",
-    "tmp": "^0.2.1"
   }
 }

@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { inject } from 'vue';
+import InputGroup from '@/components/InputGroup.vue';
+import CheckboxInput from '@/components/Inputs/CheckboxInput.vue';
+import RadioInput from '@/components/Inputs/RadioInput.vue';
+import SelectInput from '@/components/Inputs/SelectInput.vue';
+import NumberInput from '@/components/Inputs/NumberInput.vue';
+
 import type { Ref } from 'vue';
 
 const doBasis = inject('doBasis') as Ref<boolean>;
@@ -34,110 +40,72 @@ const updatePNGFormatFilter = (value: string) => {
 </script>
 
 <template>
-  <fieldset>
-    <legend>Texture Resize Options</legend>
-    <div class="input-group">
-      <label for="doResize">Enable Texture Resize</label>
-      <input type="checkbox" id="doResize" v-model="doResize" />
-    </div>
-    <div class="input-group">
-      <label for="resamplingFilter">Resampling Filter</label>
-      <div class="radio-select">
-        <div
-          v-for="(identifier, key) in ['lanczos3', 'lanczos2']"
-          :key="key"
-          class="item"
-          :class="{ active: resamplingFilter === identifier.toLowerCase(), disabled: doResize === false }"
-          @click="updateResamplingFilter(identifier.toLowerCase())"
-        >
-          {{ identifier }}
-        </div>
+  <fieldset class="p-[5px] m-[5px] relative border first-of-type:mt-[6px]">
+    <legend class="font-bold">Texture Resize Options</legend>
+
+    <InputGroup identifier="doResize" label="Resize Textures">
+      <CheckboxInput v-model="doResize" identifier="doResize" />
+    </InputGroup>
+    <InputGroup identifier="resamplingFilter" label="Resampling Filter">
+      <RadioInput :options="['lanczos3', 'lanczos2']" v-model="resamplingFilter" :disable="doResize === false" />
+    </InputGroup>
+    <InputGroup identifier="textureResolution" label="Texture Resolution">
+      <div class="flex flex-row items-center">
+        <SelectInput :disable="doResize === false" identifier="textureResolution" v-model="textureResolutionWidth" :options="[
+          { label: '128', value: 128 },
+          { label: '256', value: 256 },
+          { label: '512', value: 512 },
+          { label: '1024', value: 1024 },
+          { label: '2048', value: 2048 },
+          { label: '4096', value: 4096 }
+        ]" />
+        <span class="py-0 px-[2px]">x</span>
+        <SelectInput :disable="doResize === false" identifier="textureResolution" v-model="textureResolutionHeight" :options="[
+          { label: '128', value: 128 },
+          { label: '256', value: 256 },
+          { label: '512', value: 512 },
+          { label: '1024', value: 1024 },
+          { label: '2048', value: 2048 },
+          { label: '4096', value: 4096 }
+        ]" />
       </div>
-    </div>
-    <div class="input-group">
-      <label for="textureResolution">Texture Resolution</label>
-      <div style="display: flex; flex-direction: row;align-items: center">
-        <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionWidth">
-          <option :value="128">128</option>
-          <option :value="256">256</option>
-          <option :value="512">512</option>
-          <option :value="1024">1024</option>
-          <option :value="2048">2048</option>
-          <option :value="4096">4096</option>
-        </select>
-        <span style="padding: 0 2px">x</span>
-        <select :disabled="doResize === false" id="textureResolution" v-model="textureResolutionHeight">
-          <option :value="128">128</option>
-          <option :value="256">256</option>
-          <option :value="512">512</option>
-          <option :value="1024">1024</option>
-          <option :value="2048">2048</option>
-          <option :value="4096">4096</option>
-        </select>
-      </div>
-    </div>
+    </InputGroup>
   </fieldset>
-  <fieldset>
-    <legend>Texture Compression Options</legend>
-    <div class="input-group">
-      <label for="doBasis">Enable Texture Compression</label>
-      <input type="checkbox" id="doBasis" v-model="doBasis" />
-    </div>
-    <div class="input-group">
-      <label for="basisMethod">Method</label>
-      <div class="radio-select">
-        <div
-          v-for="(identifier, key) in ['PNG', 'ETC1S', 'UASTC']"
-          :key="key"
-          class="item"
-          :class="{ active: basisMethod === identifier.toLowerCase(), disabled: doBasis === false }"
-          @click="updateBasisMethod(identifier.toLowerCase())"
-        >
-          {{ identifier }}
-        </div>
-      </div>
-    </div>
-    <template v-if="basisMethod === 'png'">
-      <div v-if="basisMethod === 'png'" class="input-group">
-        <label for="pngFormatFilter">Format Filter</label>
-        <div class="radio-select">
-          <div
-            v-for="(identifier, key) in ['JPEG', 'PNG', 'ALL']"
-            :key="key"
-            class="item"
-            :class="{ active: pngFormatFilter === identifier.toLowerCase(), disabled: doBasis === false }"
-            @click="updatePNGFormatFilter(identifier.toLowerCase())"
-          >
-            {{ identifier }}
-          </div>
-        </div>
-      </div>
+  <fieldset class="p-[5px] m-[5px] relative border first-of-type:mt-[6px]">
+    <legend class="font-bold">Texture Compression Options</legend>
+
+    <InputGroup identifier="doBasis" label="Enable Texture Compression">
+      <CheckboxInput identifier="doBasis" v-model="doBasis" />
+    </InputGroup>
+    <InputGroup identifier="basisMethod" label="Method">
+      <RadioInput :options="['PNG', 'ETC1S', 'UASTC']" identifier="basisMethod" v-model="basisMethod" :disable="doBasis === false" />
+    </InputGroup>
+    <template v-if="basisMethod === 'PNG'">
+      <InputGroup v-if="basisMethod === 'PNG'" identifier="pngFormatFilter" label="Format Filter">
+        <RadioInput :options="['JPEG', 'PNG', 'ALL']" identifier="pngFormatFilter" v-model="pngFormatFilter" :disable="doBasis === false" />
+      </InputGroup>
     </template>
-    <template v-if="basisMethod === 'etc1s'">
-      <div class="input-group">
-        <label for="etc1sQuality">Quality</label>
-        <input :disabled="doBasis === false" id="etc1sQuality" type="number" min="1" max="255" step="1" v-model="etc1sQuality" />
-      </div>
-      <div class="input-group">
-        <label for="etc1sResizeNPOT">Resize NPOT</label>
-        <input :disabled="doBasis === false" type="checkbox" id="etc1sResizeNPOT" v-model="etc1sResizeNPOT" />
-      </div>
+    <template v-if="basisMethod === 'ETC1S'">
+      <InputGroup identifier="etc1sQuality" label="Quality">
+        <NumberInput :disable="doBasis === false" identifier="etc1sQuality" v-model="etc1sQuality" :min="1" :max="255" />
+      </InputGroup>
+      <InputGroup identifier="etc1sResizeNPOT" label="Resize NPOT">
+        <CheckboxInput :disable="doBasis === false" identifier="etc1sResizeNPOT" v-model="etc1sResizeNPOT" />
+      </InputGroup>
     </template>
-    <template v-if="basisMethod === 'uastc'">
-      <div class="input-group">
-        <label for="uastcLevel">Level</label>
-        <select :disabled="doBasis === false" v-model="uastcLevel" id="uastcLevel">
-          <option value="0">Fastest</option>
-          <option value="1">Faster</option>
-          <option value="2">Default</option>
-          <option value="3">Slow</option>
-          <option value="4">Very Slow</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label for="uastcResizeNPOT">Resize NPOT</label>
-        <input :disabled="doBasis === false" type="checkbox" id="uastcResizeNPOT" v-model="uastcResizeNPOT" />
-      </div>
+    <template v-if="basisMethod === 'UASTC'">
+      <InputGroup identifier="uastcLevel" label="Level">
+        <SelectInput :disable="doBasis === false" v-model="uastcLevel" :options="[
+          { label: 'Fastest', value: 0 },
+          { label: 'Fast', value: 1 },
+          { label: 'Default', value: 2 },
+          { label: 'Slow', value: 3 },
+          { label: 'Very Slow', value: 4 },
+        ]" />
+      </InputGroup>
+      <InputGroup identifier="uastcResizeNPOT" label="Resize NPOT">
+        <CheckboxInput :disable="doBasis === false" v-model="uastcResizeNPOT" />
+      </InputGroup>
     </template>
   </fieldset>
 </template>

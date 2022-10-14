@@ -7,32 +7,7 @@ const logString = computed<string>(() => logs.value.join('\n'));
 </script>
 
 <template>
-  <footer class="log">
-    <textarea>{{ logString }}</textarea>
+  <footer class="basis-[150px] text-left bg-[#f0f0f0] border-t border-t-black overflow-auto bloc max-h-[150px]">
+    <textarea class="block p-[5px] m-0 outline-0 border-0 resize-none w-full h-full">{{ logString }}</textarea>
   </footer>
 </template>
-
-<style lang="scss" scoped>
-$font-size: 12px;
-
-.log {
-  flex: 0 0 150px;
-  text-align: left;
-  background-color: #f0f0f0;
-  border-top: 1px solid black;
-  overflow: auto;
-  display: block;
-  max-height: 150px;
-
-  textarea {
-    display: block;
-    padding: 5px;
-    margin: 0;
-    outline: 0;
-    border: 0;
-    resize: none;
-    width: calc(100% - 10px);
-    height: calc(100% - 10px);
-  }
-}
-</style>
