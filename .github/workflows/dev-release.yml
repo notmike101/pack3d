@@ -28,10 +28,13 @@ jobs:
           version: latest
           run_install: true
 
-      - name: Build With Electron-Builder
-        uses: samuelmeuli/action-electron-builder@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        run: pnpm run build
+
+      # - name: Build With Electron-Builder
+      #   uses: samuelmeuli/action-electron-builder@v1
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a release
         uses: marvinpinto/action-automatic-releases@latest
