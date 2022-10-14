@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "node scripts/watch.mjs",
     "prebuild": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
-    "build": "pnpm run prebuild && electron-builder"
+    "release": "npm run prebuild && electron-builder"
   },
   "engines": {
     "node": ">=14.17.0"
