@@ -28,15 +28,13 @@ jobs:
           version: latest
           run_install: true
 
-      - name: Build
-        run: pnpm run build
+      - name: Build TS
+        run: pnpm run prebuild
+
+      - name: Build With Electron-Builder
+        uses: samuelmeuli/action-electron-builder@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Build With Electron-Builder
-      #   uses: samuelmeuli/action-electron-builder@v1
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a release
         uses: marvinpinto/action-automatic-releases@latest
@@ -47,5 +45,5 @@ jobs:
           title: Development Build
           files: |
             LICENSE.txt
-            release/*/Pack3D.exe
-            release/*/Pack3D.msi
+            release/Pack3D.exe
+            release/Pack3D.msi
