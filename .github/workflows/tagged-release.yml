@@ -7,7 +7,11 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -18,25 +22,14 @@ jobs:
         with:
           node-version: 16.16
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2.2.3
-        with:
-          version: latest
-          run_install: true
+      - name: Install Packages
+        run: npm install
+
+      - name: Build TS
+        run: npm run prebuild
 
       - name: Build With Electron-Builder
         uses: samuelmeuli/action-electron-builder@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create a release
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest
-          prerelease: false
-          title: Tagged Release
-          files: |
-            LICENSE.txt
-            release/*/Pack3D.exe
-            release/*/Pack3D.msi
+          release: true
