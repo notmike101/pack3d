@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { release } from 'os';
 import { Worker } from 'worker_threads';
-import path from 'path';
+import { join } from 'path';
 
 if (release().startsWith('6.1')) {
   app.disableHardwareAcceleration();
@@ -24,12 +24,12 @@ const createWindow = () => {
   mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.cjs'),
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
       nodeIntegrationInWorker: true,
-      devTools: !app.isPackaged,
+      // devTools: !app.isPackaged,
+      devTools: true,
     },
     resizable: true,
     width: 1000,
@@ -39,13 +39,17 @@ const createWindow = () => {
 
   mainWin.setMenu(null);
 
+  mainWin.webContents.openDevTools({
+    mode: 'undocked',
+    activate: true,
+  });
+
   if (app.isPackaged) {
-    mainWin.loadFile(path.join(__dirname, '../renderer/index.html'));
+    mainWin.loadFile(join(__dirname, '../renderer/index.html'));
   } else {
     const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
 
     mainWin.loadURL(url);
-    mainWin.webContents.openDevTools();
   }
 
   mainWin.webContents.on('did-finish-load', () => {
@@ -69,7 +73,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-})
+});
 
 app.on('second-instance', () => {
   if (mainWin) {
@@ -93,7 +97,7 @@ app.on('activate', () => {
 
 ipcMain.on('request-pack', (event: Electron.IpcMainEvent, data: any) => {
   const { sender } = event;
-  const worker = new Worker(path.join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
+  const worker = new Worker(join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
 
   worker.on('message', (result: any) => {
     if (result.type === 'logging') {

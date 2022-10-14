@@ -14,19 +14,16 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    electronRenderer(),
+    electronRenderer({
+      nodeIntegration: true,
+    }),
   ],
   base: './',
   build: {
-    minify: process.env.NODE_ENV === 'production',
+    minify: false,
+    // minify: process.env.NODE_ENV === 'production',
     outDir: '../../dist/renderer',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['@babylonjs/core', '@babylonjs/loaders', 'vue'],
-        },
-      },
-    },
+    sourcemap: true,
   },
   server: {
     host: pkg.env.VITE_DEV_SERVER_HOST,
