@@ -64,6 +64,7 @@ DracoCompression.Configuration = {
 };
 
 KhronosTextureContainer2.URLConfig = {
+  ...KhronosTextureContainer2.URLConfig,
   jsDecoderModule: './wasm/ktx2/ktx2Decoder.js',
   jsMSCTranscoder: './wasm/basis/msc_basis_transcoder.js',
   wasmMSCTranscoder: './wasm/basis/msc_basis_transcoder.wasm',
@@ -199,9 +200,9 @@ const addModelToScene = async (modelPath: string) => {
 
   assetContainer.addAllToScene();
 
-  renderSemaphore.value += 1;
-  await waitFrames(5, scene.value as Scene);
-  renderSemaphore.value -= 1;
+  scene.value?.executeWhenReady(() => {
+    renderNextFrame.value += 1;
+  });
 };
 
 const engineRenderLoop = () => {
