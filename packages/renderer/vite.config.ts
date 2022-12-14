@@ -4,6 +4,8 @@ import electronRenderer from 'vite-plugin-electron-renderer';
 import pkg from '../../package.json'
 import { fileURLToPath } from 'url';
 
+console.log(pkg.version);
+
 export default defineConfig({
   mode: process.env.NODE_ENV,
   root: __dirname,
@@ -11,6 +13,9 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+  },
+  define: {
+    'global.__VITE_PACKAGE_VERSION__': JSON.stringify(pkg.version),
   },
   plugins: [
     vue(),
