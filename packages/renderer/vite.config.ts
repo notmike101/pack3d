@@ -4,8 +4,6 @@ import electronRenderer from 'vite-plugin-electron-renderer';
 import pkg from '../../package.json'
 import { fileURLToPath } from 'url';
 
-console.log(pkg.version);
-
 export default defineConfig({
   mode: process.env.NODE_ENV,
   root: __dirname,
