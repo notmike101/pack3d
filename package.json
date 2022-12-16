@@ -18,7 +18,7 @@
     "release": "electron-builder"
   },
   "engines": {
-    "node": ">=14.17.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@squoosh/lib": "^0.4.0",
@@ -37,7 +37,7 @@
     "@types/tmp": "^0.2.3",
     "@vitejs/plugin-vue": "^4.0.0",
     "autoprefixer": "^10.4.12",
-    "electron": "^21.1.1",
+    "electron": "^22.0.0",
     "electron-builder": "^23.6.0",
     "meshoptimizer": "^0.18.1",
     "micromatch": "^4.0.5",
