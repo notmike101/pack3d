@@ -1,4 +1,5 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { release } from 'os';
 import { Worker } from 'worker_threads';
 import { join } from 'path';
@@ -20,6 +21,8 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
+autoUpdater.checkForUpdatesAndNotify();
 
 let mainWin: BrowserWindow | null = null;
 
