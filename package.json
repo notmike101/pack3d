@@ -23,9 +23,9 @@
   "devDependencies": {
     "@babylonjs/core": "^5.40.1",
     "@babylonjs/loaders": "^5.40.1",
-    "@gltf-transform/core": "^2.5.0",
-    "@gltf-transform/extensions": "^2.5.0",
-    "@gltf-transform/functions": "^2.5.0",
+    "@gltf-transform/core": "^2.5.1",
+    "@gltf-transform/extensions": "^2.5.1",
+    "@gltf-transform/functions": "^2.5.1",
     "@lottiefiles/vue-lottie-player": "^1.1.0",
     "@squoosh/lib": "^0.5.3",
     "@types/draco3dgltf": "^1.4.0",
