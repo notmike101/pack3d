@@ -22,11 +22,14 @@ jobs:
         with:
           node-version: 16.16
 
-      - name: Install Packages
-        run: npm install
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
 
-      - name: Build TS
-        run: npm run prebuild
+      - name: Install Packages
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
 
       - name: Build With Electron-Builder
         uses: samuelmeuli/action-electron-builder@v1
