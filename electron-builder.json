@@ -9,10 +9,6 @@
   "files": [
     "dist"
   ],
-  "mac": {
-    "target": "dmg",
-    "artifactName": "${productName}.${ext}"
-  },
   "win": {
     "target": [
       {
