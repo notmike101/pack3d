@@ -1,5 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, normalizePath } from 'vite'
 import { builtinModules } from 'module'
+import path from 'path';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import pkg from '../../package.json'
 
 export default defineConfig({
@@ -21,10 +23,16 @@ export default defineConfig({
       external: [
         'electron',
         ...builtinModules,
-        ...Object.keys(pkg.dependencies || {}),
       ],
     },
   },
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        { src: normalizePath(path.resolve(__dirname, '../../node_modules/@squoosh/lib/build/*.wasm')), dest: '.'},
+      ],
+    }),
+  ],
   server: {
     host: pkg.env.VITE_DEV_SERVER_HOST,
     port: pkg.env.VITE_DEV_SERVER_PORT,

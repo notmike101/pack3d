@@ -1,7 +1,7 @@
 {
   "name": "pack3d",
   "description": "Pack3D",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "main": "dist/main/index.cjs",
   "author": "Mike Orozco <me@mikeorozco.dev>",
   "homepage": "https://github.com/notmike101/pack3d",
@@ -57,5 +57,8 @@
     "VITE_DEV_SERVER_PORT": 3344,
     "VITE_WORKER_SERVER_HOST": "127.0.0.1",
     "VITE_WORKER_SERVER_PORT": 3345
+  },
+  "dependencies": {
+    "vite-plugin-static-copy": "^0.13.0"
   }
 }
