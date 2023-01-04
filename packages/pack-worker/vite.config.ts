@@ -30,6 +30,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         { src: normalizePath(path.resolve(__dirname, '../../node_modules/@squoosh/lib/build/*.wasm')), dest: '.'},
+        { src: normalizePath(path.resolve(__dirname, '../../node_modules/draco3dgltf/*.{wasm,js}')), dest: '.'},
       ],
     }),
   ],

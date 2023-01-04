@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { inject, ref, watch } from 'vue';
 
-interface Props {
+interface IProps {
   identifier?: string;
   modelValue: number;
   disable?: boolean;
@@ -10,7 +10,7 @@ interface Props {
   step?: number;
 }
 
-const props = defineProps<Props>();
+const props = defineProps<IProps>();
 const emit = defineEmits(['update:modelValue']);
 const state = ref<number>(props.modelValue);
 const identifier = inject('identifier', props.identifier ?? '');

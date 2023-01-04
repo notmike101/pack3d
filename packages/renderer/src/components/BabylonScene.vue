@@ -16,22 +16,17 @@ import { GLTFFileLoader } from '@babylonjs/loaders/glTF/glTFFileLoader';
 import { DracoCompression } from '@babylonjs/core/Meshes/Compression/dracoCompression';
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2';
 import { PointerEventTypes, PointerInfo } from '@babylonjs/core/Events/pointerEvents.js';
-import { waitFrames } from '../utils';
 
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Ref } from 'vue';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import type { CameraPosition } from 'types';
 
-interface CameraPosition {
-  target: Vector3;
-  position: Vector3;
-}
-
-interface Props {
+interface IProps {
   model: File;
 }
 
-const props: Props = defineProps<Props>();
+const props = defineProps<IProps>();
 const emit = defineEmits(['cameraMove']);
 
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -218,8 +213,8 @@ const engineRenderLoop = () => {
 const setCameraPosition = (newCameraPosition: CameraPosition) => {
   if (!camera.value) return;
 
-  camera.value.position = newCameraPosition.position.clone();
-  camera.value.target = newCameraPosition.target.clone();
+  camera.value.position.copyFrom(newCameraPosition.position);
+  camera.value.target.copyFrom(newCameraPosition.target);
 
   renderNextFrame.value += 1;
 };

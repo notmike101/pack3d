@@ -12,9 +12,10 @@ import micromatch from 'micromatch';
 import squoosh from '@squoosh/lib';
 import { Logger, Verbosity } from './Logger';
 import { waitExit, reportSize, createParams } from './utils';
-import { ktx2Path, MICROMATCH_OPTIONS } from './constants';
+import { MICROMATCH_OPTIONS } from './constants';
 
 import type { Document } from '@gltf-transform/core';
+import type { IPackOptions, IPackJobRequest } from 'types';
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
@@ -72,7 +73,7 @@ const doWeld = async (document: Document, documentBinary: Uint8Array, fileName: 
   return fileName + appendString;
 };
 
-const doResize = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, appendString = '') => {
+const doResize = async (document: Document, documentBinary: Uint8Array, options: IPackOptions, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   await document.transform(textureResize({
@@ -89,15 +90,20 @@ const doResize = async (document: Document, documentBinary: Uint8Array, options:
   return fileName + appendString;
 };
 
-const doBasis = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, logger: Logger, appendString = '') => {
+const doPNGTextureCompression = async (document: Document, pngFormatFilter) => {
+  const formats = micromatch.makeRe(String(pngFormatFilter), MICROMATCH_OPTIONS);
+
+  await document.transform(oxipng({ formats, squoosh }));
+};
+
+const doBasis = async (document: Document, documentBinary: Uint8Array, options: IPackOptions, fileName: string, logger: Logger, appendString = '') => {
   const startSize = documentBinary.byteLength;
+  const ktx2Path = path.resolve(process.cwd(), 'ktx2_bins');
 
   documentBinary = await io.writeBinary(document);
 
-  if (options.basisMethod === 'png') {
-    const formats = micromatch.makeRe(String(options.pngFormatFilter), MICROMATCH_OPTIONS);
-
-    await document.transform(oxipng({ formats, squoosh }));
+  if (options.basisMethod === 'PNG') {
+    doPNGTextureCompression(document, options.pngFormatFilter);
   } else {
     const lightExtension = document.createExtension(LightsPunctual).setRequired(true);
     const basisuExtension = document.createExtension(TextureBasisu).setRequired(true);
@@ -140,31 +146,21 @@ const doBasis = async (document: Document, documentBinary: Uint8Array, options: 
 
       await fs.writeFile(inPath, Buffer.from(image));
 
-      const passedOptions = {
-        filter: options.filter,
-        mode: options.basisMethod,
-        quality: null,
-        powerOfTwo: null,
-        level: null,
-      };
-
-      if (options.basisMethod === 'etc1s') {
-        passedOptions.quality = options.etc1sQuality;
-        passedOptions.powerOfTwo = options.etc1sResizeNPOT;
-      } else if (options.basisMethod === 'uastc') {
-        passedOptions.level = options.uastcLevel;
-        passedOptions.powerOfTwo = options.uastcResizeNPOT;
-      }
-
       const params = [
-        ...createParams(slots, channels, size, logger, textures.length, passedOptions),
+        ...createParams(slots, channels, size, logger, textures.length, {
+          filter: options.resamplingFilter,
+          mode: options.basisMethod,
+          quality: options.basisMethod === 'ETC1S' ? options.etc1sQuality : undefined,
+          level: options.basisMethod === 'UASTC' ? options.uastcLevel : undefined,
+          powerOfTwo: options.basisMethod === 'ETC1S' ? options.etc1sResizeNPOT : options.uastcResizeNPOT,
+        }),
         outPath,
         inPath
       ];
 
       logger.debug(`${prefix}: Spawning -> ${ktx2Path}/toktx: ${params.join(' ')}`);
 
-      const [ status, stdout, stderr ]  = await waitExit(spawn(ktx2Path + '/toktx', params));
+      const [ status, stdout, stderr ]  = await waitExit(spawn(ktx2Path + '/toktx.exe', params));
 
       if (status !== 0) {
         logger.error(`${prefix}: Failed -> \n\n${(stderr as any).toString()}`);
@@ -206,7 +202,7 @@ const doBasis = async (document: Document, documentBinary: Uint8Array, options: 
   return fileName + appendString;
 };
 
-const doDraco = async (document: Document, documentBinary: Uint8Array, options: { [key: string]: any }, fileName: string, appendString = '') => {
+const doDraco = async (document: Document, documentBinary: Uint8Array, options: IPackOptions, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
   io.registerDependencies({
@@ -219,7 +215,7 @@ const doDraco = async (document: Document, documentBinary: Uint8Array, options: 
     .setEncoderOptions({
       decodeSpeed: options.decodeSpeed,
       encodeSpeed: options.encodeSpeed,
-      method: options.vertexCompressionMethod,
+      method: options.vertexCompressionMethod === 'edgebreaker' ? 1 : 0,
       quantizationVolume: options.quantizationVolume,
       quantizationBits: {
         POSITION: options.quantizationPosition,
@@ -239,13 +235,13 @@ const doDraco = async (document: Document, documentBinary: Uint8Array, options: 
   return fileName + appendString;
 };
 
-const doPack = async (filePath: string, outputPath: string, options: { [key: string]: any } = {}) => {
+const doPack = async (options: IPackJobRequest): Promise<{ name: string, path: string, binary: Uint8Array } | Error | unknown> => {
   try {
-    if (!filePath) throw new Error('No file path specified');
-    if (!outputPath) throw new Error('No output path specified');
+    if (!options.file) throw new Error('No file path specified');
+    if (!options.outputPath) throw new Error('No output path specified');
 
-    const filePathInfo = path.parse(filePath);
-    const document = await io.read(filePath);
+    const filePathInfo = path.parse(options.file);
+    const document = await io.read(options.file);
     let documentBinary = await io.writeBinary(document);
     const extension = filePathInfo.ext;
     let outFileName = filePathInfo.name;
@@ -283,7 +279,7 @@ const doPack = async (filePath: string, outputPath: string, options: { [key: str
 
     outFileName += '_packed' + extension;
 
-    const outFile = path.resolve(outputPath + '/' + outFileName);
+    const outFile = path.resolve(options.outputPath + '/' + outFileName);
 
     await io.write(outFile, document);
     documentBinary = await io.writeBinary(document);
@@ -303,52 +299,30 @@ const doPack = async (filePath: string, outputPath: string, options: { [key: str
 };
 
 const main = async () => {
-  const data = workerData;
+  const data = workerData as IPackJobRequest;
+  const options: IPackOptions = { ...workerData } satisfies IPackOptions;
   const startTime = performance.now();
 
-  const output = await doPack(data.file, data.outputPath, {
-    doDedupe: data.doDedupe,
-    doReorder: data.doReorder,
-    doWeld: data.doWeld,
-    doInstancing: data.doInstancing,
-    doResize: data.doResize,
-    doDraco: data.doDraco,
-    resamplingFilter: data.resamplingFilter,
-    textureResolutionWidth: data.textureResolutionWidth,
-    textureResolutionHeight: data.textureResolutionHeight,
-    vertexCompressionMethod: data.vertexCompressionMethod,
-    quantizationVolume: data.quantizationVolume,
-    quantizationColor: data.quantizationColor,
-    quantizationGeneric: data.quantizationGeneric,
-    quantizationNormal: data.quantizationNormal,
-    quantizationPosition: data.quantizationPosition,
-    quantizationTexcoord: data.quantizationTexcoord,
-    encodeSpeed: data.encodeSpeed,
-    decodeSpeed: data.decodeSpeed,
-    doBasis: data.doBasis,
-    basisMethod: data.basisMethod,
-    pngFormatFilter: data.pngFormatFilter,
-    etc1sQuality: data.etc1sQuality,
-    etc1sResizeNPOT: data.etc1sResizeNPOT,
-    uastcLevel: data.uastcLevel,
-    uastcResizeNPOT: data.uastcResizeNPOT,
+  parentPort?.postMessage({
+    type: 'logging',
+    text: JSON.stringify(data),
   });
 
-  if (parentPort) {
-    if (output instanceof Error) {
-      parentPort.postMessage({
-        type: 'errorreport',
-        error: output,
-        errorMessage: output.message,
-        time: performance.now() - startTime,
-      });
-    } else {
-      parentPort.postMessage({
-        type: 'packreport',
-        file: output,
-        time: performance.now() - startTime,
-      });
-    }
+  const output = await doPack(workerData);
+
+  if (output instanceof Error) {
+    parentPort?.postMessage({
+      type: 'errorreport',
+      error: output,
+      errorMessage: output.message,
+      time: performance.now() - startTime,
+    });
+  } else {
+    parentPort?.postMessage({
+      type: 'packreport',
+      file: output,
+      time: performance.now() - startTime,
+    });
   }
 
   process.exit(0);

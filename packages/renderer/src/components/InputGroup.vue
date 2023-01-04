@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { provide, ref } from 'vue';
 
-interface Props {
+interface IProps {
   identifier?: string;
   label: string;
   disableHoverPointer?: boolean;
 }
 
-const props = defineProps<Props>();
-
+const props = defineProps<IProps>();
 const identifier = ref<string>(props.identifier ?? '');
 const label = ref<string>(props.label);
 const disableHoverPointer = ref<boolean>(props.disableHoverPointer ?? true);

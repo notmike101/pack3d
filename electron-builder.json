@@ -1,7 +1,7 @@
 {
   "appId": "Pack3D",
   "productName": "Pack3D",
-  "copyright": "Copyright © 2022 Mike Orozco @notmike101 <me@mikeorozco.dev>",
+  "copyright": "Copyright © 2023 Mike Orozco @notmike101 <me@mikeorozco.dev>",
   "asar": true,
   "directories": {
     "output": "release"
@@ -40,8 +40,8 @@
   },
   "extraFiles": [
     {
-      "from": "./redist_bins",
-      "to": "./"
+      "from": "./ktx2_bins",
+      "to": "./ktx2_bins"
     }
   ]
 }

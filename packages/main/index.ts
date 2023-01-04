@@ -2,6 +2,9 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { release } from 'os';
 import { Worker } from 'worker_threads';
 import { join } from 'path';
+import Store from 'electron-store';
+
+import type { IPackJobRequest } from 'types';
 
 if (release().startsWith('6.1')) {
   app.disableHardwareAcceleration();
@@ -21,6 +24,10 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 let mainWin: BrowserWindow | null = null;
 
 const createWindow = () => {
+  Store.initRenderer();
+
+  console.log(app.getPath('userData'));
+
   mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
@@ -95,7 +102,7 @@ app.on('activate', () => {
   }
 });
 
-ipcMain.on('request-pack', (event: Electron.IpcMainEvent, data: any) => {
+ipcMain.on('request-pack', (event: Electron.IpcMainEvent, data: IPackJobRequest) => {
   const { sender } = event;
   const worker = new Worker(join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
 

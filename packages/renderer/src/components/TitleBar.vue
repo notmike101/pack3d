@@ -3,8 +3,6 @@ import { ipcRenderer } from 'electron';
 
 const version = global.__VITE_PACKAGE_VERSION__;
 
-console.log(import.meta.env);
-
 const menuClose = () => {
   ipcRenderer.send('menu-close');
 };
