@@ -213,8 +213,8 @@ const engineRenderLoop = () => {
 const setCameraPosition = (newCameraPosition: CameraPosition) => {
   if (!camera.value) return;
 
-  camera.value.position.copyFrom(newCameraPosition.position);
-  camera.value.target.copyFrom(newCameraPosition.target);
+  camera.value.position = newCameraPosition.position.clone();
+  camera.value.target = newCameraPosition.target.clone();
 
   renderNextFrame.value += 1;
 };
