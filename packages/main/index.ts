@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { release } from 'os';
 import { Worker } from 'worker_threads';
-import { join } from 'path';
+import path from 'path';
 import Store from 'electron-store';
 
 import type { IPackJobRequest } from 'types';
@@ -25,6 +25,7 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 autoUpdater.checkForUpdatesAndNotify();
 
 let mainWin: BrowserWindow | null = null;
+let helpWin: BrowserWindow | null = null;
 
 const createWindow = () => {
   Store.initRenderer();
@@ -54,7 +55,7 @@ const createWindow = () => {
   }
 
   if (app.isPackaged) {
-    mainWin.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWin.loadFile(path.join(__dirname, '../renderer/index.html'));
   } else {
     const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
 
@@ -106,7 +107,7 @@ app.on('activate', () => {
 
 ipcMain.on('request-pack', (event: Electron.IpcMainEvent, data: IPackJobRequest) => {
   const { sender } = event;
-  const worker = new Worker(join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
+  const worker = new Worker(path.join(__dirname, '../workers/pack-worker/index.cjs'), { workerData: data });
 
   worker.on('message', (result: any) => {
     if (result.type === 'logging') {
@@ -129,3 +130,31 @@ ipcMain.on('menu-close', () => {
 ipcMain.on('menu-minimize', () => {
   mainWin?.minimize();
 });
+
+ipcMain.on('menu-help', () => {
+  helpWin = new BrowserWindow({
+    title: 'Pack3D Help',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false,
+      nodeIntegrationInWorker: true,
+      devTools: !app.isPackaged,
+    },
+    resizable: true,
+    width: 600,
+    height: 500,
+    frame: true,
+  });
+
+  helpWin.setMenu(null);
+
+  if (app.isPackaged) {
+    helpWin.loadFile(path.join(__dirname, '../renderer/help.html'));
+  } else {
+    const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}/help.html`;
+
+    helpWin.loadURL(url);
+    helpWin.webContents.openDevTools();
+  }
+})
