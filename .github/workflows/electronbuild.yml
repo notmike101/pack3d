@@ -33,8 +33,5 @@ jobs:
       - name: Install Packages
         run: pnpm install
 
-      - name: Build
-        run: pnpm run build
-
       - name: Release
         run: npm run release
