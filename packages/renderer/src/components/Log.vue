@@ -3,8 +3,8 @@ import { inject, computed } from 'vue';
 
 import type { Ref } from 'vue';
 
-const logs = inject('logs') as Ref<string[]>;
-const logString = computed<string>(() => logs.value.join('\n'));
+const logs = inject('logs') as string[];
+const logString = computed<string>(() => logs.join('\n'));
 </script>
 
 <template>

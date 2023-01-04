@@ -57,7 +57,7 @@ const isProcessing = ref<boolean>(false);
 const inputFileSize = ref<number>(0);
 const outputFileSize = ref<number>(0);
 const cameraPosition = ref<CameraPosition | null>(null);
-const logs = ref<string[]>([]);
+const logs = reactive<string[]>([]);
 const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const tabMap = {
@@ -71,7 +71,7 @@ const addLog = (data: any) => {
   const dateString = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const timeString = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 });
 
-  logs.value.unshift(`(${dateString} ${timeString}) ${data}`);
+  logs.unshift(`(${dateString} ${timeString}) ${data}`);
 };
 
 const drop = (event: DragEvent) => {
