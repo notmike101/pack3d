@@ -26,8 +26,6 @@ let mainWin: BrowserWindow | null = null;
 const createWindow = () => {
   Store.initRenderer();
 
-  console.log(app.getPath('userData'));
-
   mainWin = new BrowserWindow({
     title: 'Main window',
     webPreferences: {
@@ -35,8 +33,7 @@ const createWindow = () => {
       contextIsolation: false,
       webSecurity: false,
       nodeIntegrationInWorker: true,
-      // devTools: !app.isPackaged,
-      devTools: true,
+      devTools: !app.isPackaged,
     },
     resizable: true,
     width: 1000,
@@ -46,10 +43,12 @@ const createWindow = () => {
 
   mainWin.setMenu(null);
 
-  mainWin.webContents.openDevTools({
-    mode: 'undocked',
-    activate: true,
-  });
+  if (!app.isPackaged) {
+    mainWin.webContents.openDevTools({
+      mode: 'undocked',
+      activate: true,
+    });
+  }
 
   if (app.isPackaged) {
     mainWin.loadFile(join(__dirname, '../renderer/index.html'));
