@@ -299,15 +299,7 @@ const doPack = async (options: IPackJobRequest): Promise<{ name: string, path: s
 };
 
 const main = async () => {
-  const data = workerData as IPackJobRequest;
-  const options: IPackOptions = { ...workerData } satisfies IPackOptions;
   const startTime = performance.now();
-
-  parentPort?.postMessage({
-    type: 'logging',
-    text: JSON.stringify(data),
-  });
-
   const output = await doPack(workerData);
 
   if (output instanceof Error) {
