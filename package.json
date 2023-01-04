@@ -15,10 +15,10 @@
     "dev": "node scripts/watch.mjs",
     "build": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
     "prerelease": "vue-tsc --noEmit --p packages/renderer/tsconfig.json && node scripts/build.mjs",
-    "release": "electron-builder"
+    "release": "electron-builder --publish always"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.12.0"
   },
   "devDependencies": {
     "@babylonjs/core": "^5.40.1",
@@ -38,6 +38,7 @@
     "electron": "^22.0.0",
     "electron-builder": "^23.6.0",
     "electron-store": "^8.1.0",
+    "electron-updater": "^5.3.0",
     "meshoptimizer": "^0.18.1",
     "micromatch": "^4.0.5",
     "postcss": "^8.4.20",

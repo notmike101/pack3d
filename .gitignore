@@ -11,3 +11,5 @@ release
 models
 tests/*
 !tests/.gitkeep
+
+electron-builder.env

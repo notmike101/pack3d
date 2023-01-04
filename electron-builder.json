@@ -6,22 +6,12 @@
   "directories": {
     "output": "release"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "win": {
     "target": [
       {
-        "target": "msi",
-        "arch": [
-          "x64"
-        ]
-      },
-      {
         "target": "nsis",
-        "arch": [
-          "x64"
-        ]
+        "arch": ["x64"]
       }
     ],
     "icon": "./logo.ico",
@@ -39,5 +29,8 @@
       "from": "./ktx2_bins",
       "to": "./ktx2_bins"
     }
-  ]
+  ],
+  "publish": {
+    "provider": "github"
+  }
 }
