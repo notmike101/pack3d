@@ -48,18 +48,18 @@ export interface CameraPosition {
 }
 
 export enum EnumUASTCLevel {
-  'Fastest': 0,
-  'Fast': 1,
-  'Default': 2,
-  'Slow': 3,
-  'Very Slow': 4,
+  'Fastest' = 0,
+  'Fast' = 1,
+  'Default' = 2,
+  'Slow' = 3,
+  'Very Slow' = 4,
 }
 
 export enum EnumTextureResolution {
-  '128': 128,
-  '256': 256,
-  '512': 512,
-  '1024': 1024,
-  '2048': 2048,
-  '4096': 4096,
+  '128' = 128,
+  '256' = 256,
+  '512' = 512,
+  '1024' = 1024,
+  '2048' = 2048,
+  '4096' = 4096,
 }
