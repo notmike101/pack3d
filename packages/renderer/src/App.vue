@@ -64,7 +64,11 @@ const tabMap = {
 };
 
 const addLog = (data: any) => {
-  logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
+  const date = new Date();
+  const dateString = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeString = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 });
+
+  logs.value.unshift(`(${dateString} ${timeString}) ${data}`);
 };
 
 const drop = (event: DragEvent) => {
