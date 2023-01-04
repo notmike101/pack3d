@@ -14,6 +14,7 @@ import FileInfo from './components/FileInfo.vue';
 import Log from './components/Log.vue';
 import Tabs from './components/Tabs/Tabs.vue';
 import ErrorMessage from './components/ErrorMessage.vue';
+import PackButton from './components/PackButton.vue';
 
 import type ElectronStore from 'electron-store';
 import type { IPackOptions, CameraPosition } from 'types';
@@ -187,11 +188,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
         <div class="mb-auto flex flex-col">
           <component :is="tabMap[activeTab]" />
         </div>
-        <div class="mt-auto flex flex-col">
-          <button class="mt-auto w-full border-0 bg-[#3498db] text-white px-0 py-[10px] cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': isProcessing === true }" @click="doPack">
-            <span>{{ isProcessing ? 'Packing...' : 'Pack' }}</span>
-          </button>
-        </div>
+        <PackButton :isProcessing="isProcessing" @click="doPack" />
       </aside>
       <main v-if="inputFile" class="flex flex-row flex-1 overflow-hidden max-h-full">
         <div class="flex flex-col flex-1">
