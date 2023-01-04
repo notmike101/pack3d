@@ -12,6 +12,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  define: {
+    'global.__VITE_PACKAGE_VERSION__': JSON.stringify(pkg.version),
+  },
   plugins: [
     vue(),
     electronRenderer({

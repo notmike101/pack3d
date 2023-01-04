@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { ref, watch, inject } from 'vue';
 
-interface Props {
+interface IProps {
   identifier?: string;
   modelValue: any;
   disable?: boolean;
   options: { label: string, value: any }[];
 }
 
-const props = defineProps<Props>();
+const props = defineProps<IProps>();
 const emit = defineEmits(['update:modelValue']);
 const state = ref<any>(props.modelValue);
 const identifier = inject('identifier', props.identifier ?? '');

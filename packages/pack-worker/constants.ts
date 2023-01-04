@@ -1,7 +1,5 @@
 import { TextureChannel } from '@gltf-transform/core';
 
-export const ktx2Path = process.cwd();
-
 export const GLOBAL_DEFAULTS = {
   filter: 'lanczos4',
   filterScale: 1,
@@ -37,7 +35,6 @@ export const MICROMATCH_OPTIONS = { nocase: true, contains: true };
 export const { R, G } = TextureChannel;
 
 export default {
-  ktx2Path,
   GLOBAL_DEFAULTS,
   Mode,
   ETC1S_DEFAULTS,

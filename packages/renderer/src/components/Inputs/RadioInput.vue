@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 
-interface Props {
+interface IProps {
   modelValue: string;
   options: string[];
   disable?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = defineProps<IProps>();
 const emit = defineEmits(['update:modelValue']);
 const state = ref<string>(props.modelValue);
 

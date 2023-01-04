@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, provide } from 'vue'
+import { ref, watch, provide, reactive, onMounted } from 'vue'
+import { ipcRenderer } from 'electron';
+import { TextureResizeFilter } from '@gltf-transform/functions';
+import Store from 'electron-store';
+import path from 'path';
 import BabylonScene from './components/BabylonScene.vue';
 import TitleBar from './components/TitleBar.vue';
 import DropFileInput from './components/DropFileInput.vue';
@@ -10,44 +14,42 @@ import FileInfo from './components/FileInfo.vue';
 import Log from './components/Log.vue';
 import Tabs from './components/Tabs/Tabs.vue';
 import ErrorMessage from './components/ErrorMessage.vue';
-import { ipcRenderer } from 'electron';
-import path from 'path';
 
-import type { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import type ElectronStore from 'electron-store';
+import type { IPackOptions, CameraPosition } from 'types';
 
-interface CameraPosition {
-  target: Vector3,
-  position: Vector3,
-}
-
+const store = new Store() as ElectronStore<IPackOptions>;
 const activeTab = ref<string>('general');
 const inputFile = ref<File | null>(null);
 const outputFile = ref<File | null>(null);
-const doDedupe = ref<boolean>(true);
-const doReorder = ref<boolean>(true);
-const doWeld = ref<boolean>(true);
-const doInstancing = ref<boolean>(false);
-const doResize = ref<boolean>(false);
-const doBasis = ref<boolean>(false);
-const doDraco = ref<boolean>(false);
-const resamplingFilter = ref<string>('lanczos3');
-const textureResolutionWidth = ref<number>(1024);
-const textureResolutionHeight = ref<number>(1024);
-const vertexCompressionMethod = ref<string>('edgebreaker');
-const quantizationVolume = ref<string>('mesh');
-const quantizationColor = ref<number>(8);
-const quantizationGeneric = ref<number>(12);
-const quantizationNormal = ref<number>(10);
-const quantizationPosition = ref<number>(14);
-const quantizationTexcoord = ref<number>(12);
-const basisMethod = ref<string>('png');
-const pngFormatFilter = ref<string>('all');
-const etc1sQuality = ref<number>(128);
-const etc1sResizeNPOT = ref<boolean>(true);
-const uastcLevel = ref<number>(2);
-const uastcResizeNPOT = ref<boolean>(true);
-const encodeSpeed = ref<number>(5);
-const decodeSpeed = ref<number>(5);
+const packOptions = reactive<IPackOptions>({
+  doDedupe: store.get('doDedupe', true),
+  doReorder: store.get('doReorder', true),
+  doWeld: store.get('doWeld', true),
+  doInstancing: store.get('doInstancing', false),
+  doResize: store.get('doResize', false),
+  doBasis: store.get('doBasis', false),
+  doDraco: store.get('doDraco', false),
+  resamplingFilter: store.get('resamplingFilter', TextureResizeFilter.LANCZOS3),
+  textureResolutionWidth: store.get('textureResolutionWidth', 1024),
+  textureResolutionHeight: store.get('textureResolutionHeight', 1024),
+  vertexCompressionMethod: store.get('vertexCompressionMethod', 'edgebreaker'),
+  quantizationVolume: store.get('quantizationVolume', 'mesh'),
+  quantizationColor: store.get('quantizationColor', 0),
+  quantizationGeneric: store.get('quantizationGeneric', 0),
+  quantizationNormal: store.get('quantizationNormal', 0),
+  quantizationPosition: store.get('quantizationPosition', 0),
+  quantizationTexCoord: store.get('quantizationTexCoord', 0),
+  basisMethod: store.get('basisMethod', 'UASTC'),
+  pngFormatFilter: store.get('pngFormatFilter', 'ALL'),
+  etc1sQuality: store.get('etc1sQuality', 1),
+  etc1sResizeNPOT: store.get('etc1sResizeNPOT', false),
+  uastcLevel: store.get('uastcLevel', 0),
+  uastcResizeNPOT: store.get('uastcResizeNPOT', false),
+  encodeSpeed: store.get('encodeSpeed', 0),
+  decodeSpeed: store.get('decodeSpeed', 0),
+});
+
 const outputPath = ref<string>('');
 const errorMessage = ref<string>('');
 const isProcessing = ref<boolean>(false);
@@ -64,18 +66,22 @@ const tabMap = {
 };
 
 const addLog = (data: any) => {
-  logs.value.unshift('(' + Number(performance.now()).toFixed(0) + 'ms) ' + data);
+  const date = new Date();
+  const dateString = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeString = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 });
+
+  logs.value.unshift(`(${dateString} ${timeString}) ${data}`);
 };
 
 const drop = (event: DragEvent) => {
   event.preventDefault();
   event.stopPropagation();
 
-  const droppedFiles: FileList | undefined = event.dataTransfer?.files;
+  const droppedFiles = event.dataTransfer?.files;
 
   if (droppedFiles) {
-    for (let i: number = 0; i < droppedFiles.length; i++) {
-      const file: File | null = droppedFiles.item(i);
+    for (let i = 0; i < droppedFiles.length; i++) {
+      const file = droppedFiles.item(i);
 
       if (file) {
         inputFile.value = file;
@@ -98,32 +104,8 @@ const dragover = (event: DragEvent) => {
 const doPack = () => {
   ipcRenderer.send('request-pack', {
     file: inputFile.value?.path,
-    doDedupe: doDedupe.value,
-    doReorder: doReorder.value,
-    doWeld: doWeld.value,
-    doInstancing: doInstancing.value,
-    doBasis: doBasis.value,
-    resamplingFilter: resamplingFilter.value,
-    textureResolutionWidth: textureResolutionWidth.value,
-    textureResolutionHeight: textureResolutionHeight.value,
-    doResize: doResize.value,
-    basisMethod: basisMethod.value,
-    pngFormatFilter: pngFormatFilter.value,
-    etc1sQuality: etc1sQuality.value,
-    etc1sResizeNPOT: etc1sResizeNPOT.value,
-    uastcLevel: uastcLevel.value,
-    uastcResizeNPOT: uastcResizeNPOT.value,
-    doDraco: doDraco.value,
-    vertexCompressionMethod: vertexCompressionMethod.value,
-    quantizationVolume: quantizationVolume.value,
-    quantizationColor: quantizationColor.value,
-    quantizationGeneric: quantizationGeneric.value,
-    quantizationNormal: quantizationNormal.value,
-    quantizationPosition: quantizationPosition.value,
-    quantizationTexcoord: quantizationTexcoord.value,
-    encodeSpeed: encodeSpeed.value,
-    decodeSpeed: decodeSpeed.value,
     outputPath: outputPath.value,
+    ...packOptions,
   });
 
   outputFileSize.value = 0;
@@ -171,50 +153,24 @@ const errorWatcher = () => {
   }
 };
 
+const packOptionsWatcher = (newValue: IPackOptions) => {
+  store.set(newValue);
+};
+
+const mountHandler = () => {
+  store.set(packOptions);
+};
+
+onMounted(mountHandler);
 watch(errorMessage, errorWatcher);
+watch(packOptions, packOptionsWatcher);
 
-// Tabs
 provide('activeTab', activeTab);
-
-// Error message
 provide('errorMessage', errorMessage);
-
-// General
-provide('doDedupe', doDedupe);
-provide('doReorder', doReorder);
-provide('doWeld', doWeld);
-provide('doInstancing', doInstancing);
-
-// Texture
-provide('doBasis', doBasis);
-provide('resamplingFilter', resamplingFilter);
-provide('textureResolutionWidth', textureResolutionWidth);
-provide('textureResolutionHeight', textureResolutionHeight);
-provide('doResize', doResize);
-provide('basisMethod', basisMethod);
-provide('pngFormatFilter', pngFormatFilter);
-provide('etc1sQuality', etc1sQuality);
-provide('etc1sResizeNPOT', etc1sResizeNPOT);
-provide('uastcLevel', uastcLevel);
-provide('uastcResizeNPOT', uastcResizeNPOT);
-
-// Vertex
-provide('doDraco', doDraco);
-provide('vertexCompressionMethod', vertexCompressionMethod);
-provide('quantizationVolume', quantizationVolume);
-provide('quantizationColor', quantizationColor);
-provide('quantizationGeneric', quantizationGeneric);
-provide('quantizationNormal', quantizationNormal);
-provide('quantizationPosition', quantizationPosition);
-provide('quantizationTexcoord', quantizationTexcoord);
-provide('encodeSpeed', encodeSpeed);
-provide('decodeSpeed', decodeSpeed);
-
-// Logger
+provide('packOptions', packOptions);
 provide('logs', logs);
-
-// BabylonScene
 provide('cameraPosition', cameraPosition);
+provide('store', store);
 
 ipcRenderer.on('logging', onLoggingEvent);
 ipcRenderer.on('pack-success', onPackSuccess);
@@ -231,7 +187,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
         <div class="mb-auto flex flex-col">
           <component :is="tabMap[activeTab]" />
         </div>
-        <div class="mt-auto flex flex-col border-t border-t-black">
+        <div class="mt-auto flex flex-col">
           <button class="mt-auto w-full border-0 bg-[#3498db] text-white px-0 py-[10px] cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': isProcessing === true }" @click="doPack">
             <span>{{ isProcessing ? 'Packing...' : 'Pack' }}</span>
           </button>

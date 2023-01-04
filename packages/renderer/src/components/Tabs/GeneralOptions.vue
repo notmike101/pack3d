@@ -3,12 +3,9 @@ import { inject } from 'vue';
 import InputGroup from '@/components/InputGroup.vue';
 import CheckboxInput from '@/components/Inputs/CheckboxInput.vue';
 
-import type { Ref } from 'vue';
+import type { IPackOptions } from 'types';
 
-const doDedupe = inject('doDedupe') as Ref<boolean>;
-const doReorder = inject('doReorder') as Ref<boolean>;
-const doWeld = inject('doWeld') as Ref<boolean>;
-const doInstancing = inject('doInstancing') as Ref<boolean>;
+const packOptions = inject('packOptions') as IPackOptions;
 </script>
 
 <template>
@@ -16,16 +13,16 @@ const doInstancing = inject('doInstancing') as Ref<boolean>;
     <legend class="font-bold">General Options</legend>
 
     <InputGroup identifier="doDedupe" label="Deduplicate Vertices">
-      <CheckboxInput v-model="doDedupe" identifier="doDedupe" />
+      <CheckboxInput v-model="packOptions.doDedupe" identifier="doDedupe" />
     </InputGroup>
     <InputGroup identifier="doReorder" label="Reorder Vertices">
-      <CheckboxInput v-model="doReorder" identifier="doReorder" />
+      <CheckboxInput v-model="packOptions.doReorder" identifier="doReorder" />
     </InputGroup>
     <InputGroup identifier="doWeld" label="Weld Vertices">
-      <CheckboxInput v-model="doWeld" identifier="doWeld" />
+      <CheckboxInput v-model="packOptions.doWeld" identifier="doWeld" />
     </InputGroup>
     <InputGroup identifier="doInstancing" label="Use Instancing">
-      <CheckboxInput v-model="doInstancing" identifier="doInstancing" />
+      <CheckboxInput v-model="packOptions.doInstancing" identifier="doInstancing" />
     </InputGroup>
   </fieldset>
 </template>

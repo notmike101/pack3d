@@ -1,10 +1,10 @@
 <script setup lang="ts">
-interface Props {
+interface IProps {
   name: string;
   size: number;
 }
 
-const props: Props = defineProps<Props>();
+const props = defineProps<IProps>();
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return bytes + ' Bytes';
