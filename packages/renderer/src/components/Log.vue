@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue';
 
-import type { Ref } from 'vue';
-
 const logs = inject('logs') as string[];
 const logString = computed<string>(() => logs.join('\n'));
 </script>
