@@ -1,18 +1,16 @@
 import { parentPort, workerData } from 'worker_threads';
 import { NodeIO, FileUtils, ImageUtils } from '@gltf-transform/core';
-import { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask, oxipng } from '@gltf-transform/functions';
-import { DracoMeshCompression, TextureBasisu, LightsPunctual, ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { dedup, weld, reorder, textureResize, instance, listTextureSlots, getTextureChannelMask, textureCompress } from '@gltf-transform/functions';
+import { KHRDracoMeshCompression, KHRTextureBasisu, KHRLightsPunctual, ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptEncoder } from 'meshoptimizer';
 import { spawn } from 'child_process';
 import draco3d from 'draco3dgltf';
 import path from 'path';
 import tmp from 'tmp';
 import fs from 'fs/promises';
-import micromatch from 'micromatch';
-import squoosh from '@squoosh/lib';
+import sharp from 'sharp';
 import { Logger, Verbosity } from './Logger';
 import { waitExit, reportSize, createParams } from './utils';
-import { MICROMATCH_OPTIONS } from './constants';
 
 import type { Document } from '@gltf-transform/core';
 import type { IPackOptions, IPackJobRequest } from 'types';
@@ -90,10 +88,16 @@ const doResize = async (document: Document, documentBinary: Uint8Array, options:
   return fileName + appendString;
 };
 
-const doPNGTextureCompression = async (document: Document, pngFormatFilter) => {
-  const formats = micromatch.makeRe(String(pngFormatFilter), MICROMATCH_OPTIONS);
+const doTextureCompression = async (document: Document, targetFormat?: 'ALL' | 'PNG' | 'JPEG', resize?: [number, number]) => {
+  const target = targetFormat === 'ALL' ? undefined : targetFormat?.toLowerCase();
 
-  await document.transform(oxipng({ formats, squoosh }));
+  await document.transform(
+    textureCompress({
+      targetFormat: target as "jpeg" | "png" | "webp" | "avif" | undefined,
+      resize,
+      encoder: sharp,
+    })
+  );
 };
 
 const doBasis = async (document: Document, documentBinary: Uint8Array, options: IPackOptions, fileName: string, logger: Logger, appendString = '') => {
@@ -103,17 +107,17 @@ const doBasis = async (document: Document, documentBinary: Uint8Array, options: 
   documentBinary = await io.writeBinary(document);
 
   if (options.basisMethod === 'PNG') {
-    doPNGTextureCompression(document, options.pngFormatFilter);
+    await doTextureCompression(document, options.pngFormatFilter);
   } else {
-    const lightExtension = document.createExtension(LightsPunctual).setRequired(true);
-    const basisuExtension = document.createExtension(TextureBasisu).setRequired(true);
+    const lightExtension = document.createExtension(KHRLightsPunctual).setRequired(true);
+    const basisuExtension = document.createExtension(KHRTextureBasisu).setRequired(true);
 
     const textures = document.getRoot().listTextures();
     let numCompressed = 0;
 
     const promises = textures.map(async (texture, textureIndex) => {
-      const slots = listTextureSlots(document, texture);
-      const channels = getTextureChannelMask(document, texture);
+      const slots = listTextureSlots(texture);
+      const channels = getTextureChannelMask(texture);
       const textureLabel = texture.getURI() || texture.getName() || `${textureIndex + 1}/${document.getRoot().listTextures().length}`;
       const prefix = `toktx:texture(${textureLabel})`;
       const textureMimeType = texture.getMimeType();
@@ -205,12 +209,7 @@ const doBasis = async (document: Document, documentBinary: Uint8Array, options: 
 const doDraco = async (document: Document, documentBinary: Uint8Array, options: IPackOptions, fileName: string, appendString = '') => {
   const startSize = documentBinary.byteLength;
 
-  io.registerDependencies({
-    'draco3d.decoder': await draco3d.createDecoderModule(),
-    'draco3d.encoder': await draco3d.createEncoderModule(),
-  });
-
-  document.createExtension(DracoMeshCompression)
+  document.createExtension(KHRDracoMeshCompression)
     .setRequired(true)
     .setEncoderOptions({
       decodeSpeed: options.decodeSpeed,
@@ -239,6 +238,11 @@ const doPack = async (options: IPackJobRequest): Promise<{ name: string, path: s
   try {
     if (!options.file) throw new Error('No file path specified');
     if (!options.outputPath) throw new Error('No output path specified');
+
+    io.registerDependencies({
+      'draco3d.decoder': await draco3d.createDecoderModule(),
+      'draco3d.encoder': await draco3d.createEncoderModule(),
+    });
 
     const filePathInfo = path.parse(options.file);
     const document = await io.read(options.file);
@@ -317,7 +321,7 @@ const main = async () => {
     });
   }
 
-  process.exit(0);
+  // process.exit(0);
 }
 
 main();

@@ -1,5 +1,5 @@
-import { defineConfig, normalizePath } from 'vite'
-import { builtinModules } from 'module'
+import { defineConfig, normalizePath } from 'vite';
+import { builtinModules } from 'module';
 import path from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import pkg from '../../package.json'
@@ -29,7 +29,7 @@ export default defineConfig({
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: normalizePath(path.resolve(__dirname, '../../node_modules/@squoosh/lib/build/*.wasm')), dest: '.'},
+        { src: normalizePath(path.resolve(__dirname, '../../node_modules/sharp/build/Release/*')), dest: '../build/Release/'},
         { src: normalizePath(path.resolve(__dirname, '../../node_modules/draco3dgltf/*.{wasm,js}')), dest: '.'},
       ],
     }),
