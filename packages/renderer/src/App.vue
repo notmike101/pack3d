@@ -17,6 +17,7 @@ import ErrorMessage from './components/ErrorMessage.vue';
 import PackButton from './components/PackButton.vue';
 
 import type ElectronStore from 'electron-store';
+import type { IpcRendererEvent } from 'electron/common';
 import type { IPackOptions, CameraPosition } from 'types';
 
 const store = new Store() as ElectronStore<IPackOptions>;
@@ -119,7 +120,7 @@ const updateCameraPosition = (event: CameraPosition) => {
   cameraPosition.value = event;
 };
 
-const onPackSuccess = (event: Event, data: any) => {
+const onPackSuccess = (event: IpcRendererEvent, data: any) => {
   isProcessing.value = false;
   outputFile.value = data.file;
   outputFileSize.value = data.file.binary.byteLength;
@@ -127,18 +128,18 @@ const onPackSuccess = (event: Event, data: any) => {
   addLog('Packing successful. Reduced file size by ' + (100 - (outputFileSize.value / inputFileSize.value) * 100).toFixed(2) + '%.');
 };
 
-const onPackError = (event: Event, data: any) => {
+const onPackError = (event: IpcRendererEvent, data: any) => {
   errorMessage.value = data.error.message;
   isProcessing.value = false;
 
   addLog('Error: ' + data.error.message);
 };
 
-const onPackSizeReport = (event: Event, data: any) => {
+const onPackSizeReport = (event: IpcRendererEvent, data: any) => {
   addLog(`Action ${data.action} reduced file size by ${(100 - (data.endSize / data.startSize) * 100).toFixed(2)}%.`);
 };
 
-const onLoggingEvent = (event: Event, data: any) => {
+const onLoggingEvent = (event: IpcRendererEvent, data: any) => {
   addLog(`[${data.verbosity}] ${data.text}`);
 };
 
@@ -180,17 +181,17 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
 </script>
 
 <template>
-  <div @drop="drop" @dragover="dragover" class="flex flex-col flex-1 select-none overflow-hidden flex-wrap">
+  <div @drop="drop" @dragover="dragover" class="flex flex-col flex-wrap flex-1 overflow-hidden select-none">
     <TitleBar />
-    <div class="flex flex-row flex-1 select-none overflow-hidden flex-wrap">
+    <div class="flex flex-row flex-wrap flex-1 overflow-hidden select-none">
       <aside v-if="inputFile" class="basis-[250px] bg-[#ecf0f1] break-words text-left flex flex-col p-0 max-h-full">
         <Tabs />
-        <div class="mb-auto flex flex-col">
+        <div class="flex flex-col mb-auto">
           <component :is="tabMap[activeTab]" />
         </div>
         <PackButton :isProcessing="isProcessing" @click="doPack" />
       </aside>
-      <main v-if="inputFile" class="flex flex-row flex-1 overflow-hidden max-h-full">
+      <main v-if="inputFile" class="flex flex-row flex-1 max-h-full overflow-hidden">
         <div class="flex flex-col flex-1">
           <div class="flex flex-row flex-1 overflow-hidden">
             <div class="flex flex-1 flex-col relative overflow-hidden max-w-full max-h-full first-of-type:border-r first-of-type:border-r-[#bdc3c7]">
@@ -203,7 +204,7 @@ ipcRenderer.on('pack-sizereport', onPackSizeReport);
                 <FileInfo :name="outputFile.name" :size="outputFileSize" />
               </template>
               <template v-if="isProcessing === true">
-                <p class="m-auto flex flex-1 items-center justify-center">Processing...</p>
+                <p class="flex items-center justify-center flex-1 m-auto">Processing...</p>
               </template>
             </div>
           </div>
